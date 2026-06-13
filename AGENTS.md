@@ -51,7 +51,9 @@ In scope:
 - the probit-transform local-likelihood KDE building block (Geenens bulk
   estimator);
 - constant-method bandwidth selection (Pearson-correlation covariance with an
-  ACE maximal-correlation scaling and an `n^(-1/3)` multiplier);
+  ACE maximal-correlation scaling and an `n^(-1/3)` multiplier), with an optional
+  non-negative `ridge` (default `0`, which reproduces the unregularized formula
+  exactly) that keeps the bandwidth positive-definite when the scaling collapses;
 - arbitrary-point and grid evaluation of the targets `h`, `c`, `r`, the tail
   mass `p`, and integrated error metrics (ISE/IAE/KL).
 
@@ -60,7 +62,7 @@ Out of scope (for now):
 - the full piece-together estimator and the marginal-scaling/IPF projection;
 - dimensions `> 2` and vine extensions;
 - plotting, tabular reporting, and simulation harnesses (these live in
-  `notebooks/`, not the library);
+  `examples/`, not the library);
 - non-Gaussian kernels and the notebook's "smooth blending" variant.
 
 ## Package structure

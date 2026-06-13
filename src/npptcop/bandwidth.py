@@ -101,7 +101,7 @@ def _pairwise_mcor(x: Tensor) -> float:
   return _pearson_cor(phi).item()
 
 
-def select_bandwidth_constant(z: Tensor) -> Tensor:
+def select_bandwidth_constant(z: Tensor, ridge: float = 0.0) -> Tensor:
   """Bandwidth matrix for the constant-method local-likelihood KDE.
 
   Mirrors ``TllBicop::select_bandwidth`` for ``method == "constant"`` on
@@ -109,11 +109,21 @@ def select_bandwidth_constant(z: Tensor) -> Tensor:
   ``mult * cov * scale`` with ``mult = n**(-1/3)``, ``cov`` the unit-variance
   correlation matrix (Pearson correlation clamped to ``[-0.95, 0.95]``), and
   ``scale = |cor / mcor|**(0.5 * mcor)`` the maximal-correlation adjustment.
+
+  ``scale`` collapses to ``0`` when the linear correlation vanishes while the
+  maximal correlation does not, yielding a singular bandwidth. A non-negative
+  ``ridge`` adds ``ridge * I`` to keep the result positive-definite; ``ridge=0``
+  (the default) reproduces the unregularized formula exactly.
   """
+  if ridge < 0.0:
+    raise ValueError(f"ridge must be non-negative, got {ridge}")
   n = z.shape[0]
   cor = _pearson_cor(z).clamp(-0.95, 0.95).item()
   cov = torch.tensor([[1.0, cor], [cor, 1.0]], dtype=z.dtype, device=z.device)
   mult = n ** (-1.0 / 3.0)
   mcor = _pairwise_mcor(z)
   scale = abs(cor / mcor) ** (0.5 * mcor)
-  return mult * cov * scale
+  bandwidth = mult * cov * scale
+  if ridge:
+    bandwidth = bandwidth + ridge * torch.eye(2, dtype=z.dtype, device=z.device)
+  return bandwidth

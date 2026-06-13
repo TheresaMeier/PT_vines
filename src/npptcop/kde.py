@@ -23,13 +23,21 @@ class ProbitTLL:
   back-transformed bulk copula density ``c_B(u) = f_hat(Phi^{-1} u) / (phi phi)``.
   """
 
-  def __init__(self, bandwidth: Tensor | None = None) -> None:
-    """Optionally fix the ``(2, 2)`` bandwidth; if ``None`` select it at fit."""
+  def __init__(
+    self, bandwidth: Tensor | None = None, ridge: float = 0.0
+  ) -> None:
+    """Optionally fix the ``(2, 2)`` bandwidth; if ``None`` select it at fit.
+
+    ``ridge`` is the non-negative diagonal regularization added to a *selected*
+    bandwidth (ignored when an explicit ``bandwidth`` is given); see
+    :func:`npptcop.bandwidth.select_bandwidth_constant`.
+    """
     self.bandwidth = (
       None
       if bandwidth is None
       else torch.as_tensor(bandwidth, dtype=torch.float64)
     )
+    self.ridge = ridge
 
   def fit(self, u: Tensor) -> "ProbitTLL":
     """Probit-transform ``u`` (shape ``(n, 2)`` in ``(0, 1)``), select/store the
@@ -38,7 +46,7 @@ class ProbitTLL:
     u = torch.as_tensor(u, dtype=torch.float64)
     z_data = qnorm(u.clamp(_CLAMP_EPS, 1.0 - _CLAMP_EPS))
     bandwidth = (
-      select_bandwidth_constant(z_data)
+      select_bandwidth_constant(z_data, ridge=self.ridge)
       if self.bandwidth is None
       else self.bandwidth.to(z_data)
     )

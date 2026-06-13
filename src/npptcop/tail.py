@@ -60,6 +60,9 @@ class TailCopula:
       on the rescaled, probit-transformed tail observations at fit time.
     rotation: corner selector in ``{0, 90, 180, 270}`` (pyvinecopulib
       convention); ``0`` is the lower-left tail.
+    ridge: non-negative diagonal regularization for the selected bandwidth,
+      guarding against a singular bandwidth on small or weakly dependent tail
+      samples; ``0`` (the default) leaves the selection unregularized.
   """
 
   def __init__(
@@ -67,6 +70,7 @@ class TailCopula:
     q: float,
     bandwidth: Tensor | None = None,
     rotation: int = 0,
+    ridge: float = 0.0,
   ) -> None:
     if not 0.0 < q < 1.0:
       raise ValueError(f"q must lie in (0, 1), got {q}")
@@ -74,7 +78,7 @@ class TailCopula:
       raise ValueError(f"rotation must be one of {_ROTATIONS}, got {rotation}")
     self.q = float(q)
     self.rotation = rotation
-    self._kde = ProbitTLL(bandwidth)
+    self._kde = ProbitTLL(bandwidth, ridge=ridge)
 
   def fit(self, u: Tensor) -> "TailCopula":
     """Reflect to the chosen corner, mask to ``[0, q]^2``, rescale by ``1 / q``,

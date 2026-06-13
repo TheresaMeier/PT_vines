@@ -70,3 +70,11 @@ def test_non_pd_bandwidth_raises() -> None:
   bad = torch.tensor([[1.0, 2.0], [2.0, 1.0]])  # indefinite
   with pytest.raises(RuntimeError):
     ProbitTLL(bad).fit(torch.tensor([[0.3, 0.6]]))
+
+
+def test_ridge_threads_into_selected_bandwidth(
+  small_sample: Tensor, machine: Callable[..., bool]
+) -> None:
+  base = ProbitTLL().fit(small_sample).bandwidth_
+  ridged = ProbitTLL(ridge=1e-3).fit(small_sample).bandwidth_
+  assert machine(ridged, base + 1e-3 * torch.eye(2))

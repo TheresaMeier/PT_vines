@@ -48,8 +48,10 @@ r = est.r(grid)                      # tail copula density (lambda)
 print(est.fit_.p, est.fit_.k)        # tail mass p = k / n and tail count k
 ```
 
-See [`notebooks/`](notebooks/) for a worked example comparing the estimate to
-the true Clayton tail.
+See [`examples/`](examples/) for a worked demo notebook
+(`tail_copula_clayton.ipynb`) and a parallel simulation study
+(`sim_study_biv_tail.py`, run with `uv run --extra interactive python
+examples/sim_study_biv_tail.py`).
 
 ## Development
 

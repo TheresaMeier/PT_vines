@@ -94,6 +94,14 @@ def test_invalid_rotation_raises(rotation: int) -> None:
     TailCopula(Q, rotation=rotation)
 
 
+def test_ridge_threads_into_bandwidth(
+  clayton_sample: Tensor, machine: Callable[..., bool]
+) -> None:
+  base = TailCopula(Q).fit(clayton_sample).fit_.bandwidth
+  ridged = TailCopula(Q, ridge=1e-3).fit(clayton_sample).fit_.bandwidth
+  assert machine(ridged, base + 1e-3 * torch.eye(2))
+
+
 @pytest.mark.parametrize("rotation", [0, 90, 180, 270])
 def test_rotation_matches_reflection(
   rotation: int,
