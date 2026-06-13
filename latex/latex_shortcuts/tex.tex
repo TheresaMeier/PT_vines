@@ -1,0 +1,15 @@
+% figure environment with scaling in multiples of \textwidth
+\newcommand{\fig}[1][1]{
+  \includegraphics[width = #1\textwidth]
+}
+
+% footnote without mark
+\makeatletter
+\def\blfootnote{\gdef\@thefnmark{}\@footnotetext}
+\makeatother
+
+\newcommand{\envbreak}{ \, \\[-12pt]}
+
+\newcommand{\tw}{\textwidth}
+
+\newcommand{\expl}[1]{\tag*{(#1)}}

@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install Python and dependencies
+        run: |
+          uv python install 3.12
+          uv sync
+
+      - name: Lint and format
+        run: |
+          uv run ruff format --check .
+          uv run ruff check .
+
+      - name: Type check
+        run: uv run ty check .
+
+      - name: Test
+        run: uv run pytest tests/ --cov=src/npptcop --cov-report=term-missing -n auto
