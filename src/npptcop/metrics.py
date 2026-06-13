@@ -14,8 +14,12 @@ def grid_metrics_density(
 
   Returns ``{"ISE", "IAE", "KL"}`` as Riemann sums weighted by ``cell_area``:
   the integrated squared error, the integrated absolute error, and the
-  Kullback-Leibler divergence ``int truth log(truth / est)``. Both densities are
-  floored at ``eps`` inside the KL logarithm to avoid ``log 0``.
+  generalized Kullback-Leibler divergence (I-divergence)
+  ``int [truth log(truth / est) - truth + est]``. The generalized form is
+  non-negative for any non-negative ``est``/``truth`` (not only normalized
+  densities) and reduces to the usual KL when both integrate to one; the
+  ``- truth + est`` term is what keeps it non-negative when ``est``
+  over-concentrates. Densities are floored at ``eps`` inside the logarithm.
   """
   est = torch.as_tensor(est, dtype=torch.float64)
   truth = torch.as_tensor(truth, dtype=torch.float64)
@@ -23,7 +27,7 @@ def grid_metrics_density(
   truth_pos = truth.clamp_min(eps)
   ise = ((est - truth) ** 2).sum() * cell_area
   iae = (est - truth).abs().sum() * cell_area
-  kl = (truth_pos * (truth_pos / est_pos).log()).sum() * cell_area
+  kl = (truth_pos * (truth_pos / est_pos).log() - truth + est).sum() * cell_area
   return {"ISE": float(ise), "IAE": float(iae), "KL": float(kl)}
 
 

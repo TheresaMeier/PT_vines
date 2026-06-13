@@ -224,6 +224,9 @@ latex/**/*.pdf
 
 # Research scratch (kept on disk, out of version control)
 /old/
+
+# Generated simulation-study outputs (reproduced from examples/)
+/results/
 *.out
 *.aux
 *.blg

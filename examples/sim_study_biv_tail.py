@@ -6,6 +6,10 @@ each ``(seed, family, tau, n)`` cell it simulates a copula, computes the true
 tail targets, and compares the bulk ("Ordinary") and tail-adaptive ("Tail")
 estimators with integrated ISE/IAE/KL errors plus the tail-mass error.
 
+Each family is evaluated at the corner where its tail dependence concentrates
+(see ``FAMILY_ROTATION``): Clayton lower-left, Gumbel upper-right, and the
+radially symmetric Gaussian and Student lower-left.
+
 The "Tail" model uses the package's ``select_bandwidth_constant`` rule, not the
 old ``k**(-1/3) * cov`` covariance rule, so its numbers differ from the legacy
 CSV by design; the "Ordinary" (bulk) numbers match. A small ``--ridge`` (default
@@ -39,8 +43,18 @@ from npptcop import ProbitTLL, TailCopula, grid_metrics_density, unit_grid
 
 LOG = logging.getLogger("sim_study_biv_tail")
 
-FAMILIES: tuple[str, ...] = ("clayton", "gumbel", "gaussian", "student")
-ROTATIONS: tuple[int, ...] = (0, 90, 180, 270)
+# Gaussian is listed last: it is tail-independent, the case where the tail
+# estimator is expected to do poorly.
+FAMILIES: tuple[str, ...] = ("clayton", "gumbel", "student", "gaussian")
+# Each family is studied at the corner where its tail dependence concentrates
+# (pyvinecopulib density-rotation convention): Clayton lower-left, Gumbel
+# upper-right, the radially symmetric Student and Gaussian lower-left.
+FAMILY_ROTATION: dict[str, int] = {
+  "clayton": 0,
+  "gumbel": 180,
+  "student": 0,
+  "gaussian": 0,
+}
 COLUMNS: tuple[str, ...] = (
   "seed",
   "family",
@@ -148,30 +162,50 @@ def _init_worker() -> None:
   torch.set_num_threads(1)
 
 
-def _corner_count(u: Tensor, q: float, rotation: int) -> int:
-  """Number of observations in the rotation's corner block ``[0, q]^2``.
-
-  Mirrors ``TailCopula``'s internal reflection so the tiny-tail skip can run
-  before fitting (bandwidth selection is undefined for a handful of points).
-  """
+def _reflect(u: Tensor, rotation: int) -> Tensor:
+  """Map the rotation's corner onto the lower-left (pyvinecopulib convention)."""
   if rotation == 90:
-    corner = torch.stack((1.0 - u[:, 0], u[:, 1]), dim=1)
-  elif rotation == 180:
-    corner = 1.0 - u
-  elif rotation == 270:
-    corner = torch.stack((u[:, 0], 1.0 - u[:, 1]), dim=1)
-  else:
-    corner = u
+    return torch.stack((1.0 - u[:, 0], u[:, 1]), dim=1)
+  if rotation == 180:
+    return 1.0 - u
+  if rotation == 270:
+    return torch.stack((u[:, 0], 1.0 - u[:, 1]), dim=1)
+  return u
+
+
+def _corner_count(u: Tensor, q: float, rotation: int) -> int:
+  """Number of observations in the rotation's corner block of size ``q``.
+
+  Mirrors ``TailCopula``'s reflection so the tiny-tail skip can run before
+  fitting (bandwidth selection is undefined for a handful of points).
+  """
+  corner = _reflect(u, rotation)
   return int(((corner[:, 0] <= q) & (corner[:, 1] <= q)).sum())
 
 
+def _corner_mass(bicop: pv.Bicop, q: float, rotation: int) -> float:
+  """Exact probability mass in the rotation's corner block of size ``q``."""
+
+  def cdf(a: float, b: float) -> float:
+    return float(np.asarray(bicop.cdf(np.array([[a, b]])))[0])
+
+  if rotation == 90:
+    return q - cdf(1.0 - q, q)
+  if rotation == 180:
+    return 2.0 * q - 1.0 + cdf(1.0 - q, 1.0 - q)
+  if rotation == 270:
+    return q - cdf(q, 1.0 - q)
+  return cdf(q, q)
+
+
 def _truth_targets(
-  bicop: pv.Bicop, u_tail_grid: Tensor, q: float
+  bicop: pv.Bicop, u_tail_grid: Tensor, q: float, rotation: int
 ) -> tuple[Tensor, Tensor, Tensor, float]:
-  """True ``(c, r, h, p)`` on the tail grid via pyvinecopulib."""
-  c_true = torch.as_tensor(bicop.pdf(u_tail_grid.numpy()), dtype=torch.float64)
+  """True ``(c, r, h, p)`` on the rotation's corner block via pyvinecopulib."""
+  corner = _reflect(u_tail_grid, rotation)
+  c_true = torch.as_tensor(bicop.pdf(corner.numpy()), dtype=torch.float64)
   r_true = q * c_true
-  p_true = float(np.asarray(bicop.cdf(np.array([[q, q]])))[0])
+  p_true = _corner_mass(bicop, q, rotation)
   h_true = (q**2 / p_true) * c_true
   return c_true, r_true, h_true, p_true
 
@@ -182,9 +216,11 @@ def _ordinary_targets(
   q: float,
   cell_area_tail: float,
   ridge: float,
+  rotation: int,
 ) -> tuple[Tensor, Tensor, Tensor, float]:
-  """Bulk ``ProbitTLL`` ``(c, r, h, p)`` evaluated on the tail grid."""
-  c_body = ProbitTLL(ridge=ridge).fit(u_data).evaluate(u_tail_grid)
+  """Bulk ``ProbitTLL`` ``(c, r, h, p)`` at the rotation's corner block."""
+  corner = _reflect(u_tail_grid, rotation)
+  c_body = ProbitTLL(ridge=ridge).fit(u_data).evaluate(corner)
   p_body = float(c_body.sum() * cell_area_tail)
   r_body = q * c_body
   h_body = (q**2 / p_body) * c_body
@@ -251,9 +287,11 @@ def run_combo(spec: ComboSpec) -> ComboResult:
     cell_area_tail = (q**2) * cell_area
 
     tail = TailCopula(q, rotation=spec.rotation, ridge=spec.ridge).fit(u_data)
-    c_true, r_true, h_true, p_true = _truth_targets(bicop, u_tail_grid, q)
+    c_true, r_true, h_true, p_true = _truth_targets(
+      bicop, u_tail_grid, q, spec.rotation
+    )
     c_body, r_body, h_body, p_body = _ordinary_targets(
-      u_data, u_tail_grid, q, cell_area_tail, spec.ridge
+      u_data, u_tail_grid, q, cell_area_tail, spec.ridge, spec.rotation
     )
 
     ests = {
@@ -286,7 +324,7 @@ def build_parser() -> argparse.ArgumentParser:
   parser.add_argument(
     "--families", nargs="+", choices=FAMILIES, default=list(FAMILIES)
   )
-  parser.add_argument("--taus", nargs="+", type=float, default=[0.3, 0.6, 0.9])
+  parser.add_argument("--taus", nargs="+", type=float, default=[0.4, 0.8])
   parser.add_argument(
     "--ns", nargs="+", type=int, default=[100, 500, 1000, 5000]
   )
@@ -294,7 +332,6 @@ def build_parser() -> argparse.ArgumentParser:
   parser.add_argument("--nu", type=int, default=4)
   parser.add_argument("--grid-size", type=int, default=50)
   parser.add_argument("--eps", type=float, default=1e-4)
-  parser.add_argument("--rotation", type=int, choices=ROTATIONS, default=0)
   parser.add_argument("--min-tail-count", type=int, default=5)
   parser.add_argument("--ridge", type=float, default=1e-6)
   parser.add_argument(
@@ -321,7 +358,7 @@ def enumerate_combos(args: argparse.Namespace) -> list[ComboSpec]:
       nu=args.nu,
       grid_size=args.grid_size,
       eps=args.eps,
-      rotation=args.rotation,
+      rotation=FAMILY_ROTATION[family],
       min_tail_count=args.min_tail_count,
       ridge=args.ridge,
     )
@@ -380,10 +417,9 @@ def main() -> None:
   specs = enumerate_combos(args)
   workers = args.workers or min(os.cpu_count() or 1, 8)
   LOG.info(
-    "%d combos | %d workers | rotation=%d -> %s",
+    "%d combos | %d workers -> %s",
     len(specs),
     workers,
-    args.rotation,
     args.output,
   )
   if args.dry_run:

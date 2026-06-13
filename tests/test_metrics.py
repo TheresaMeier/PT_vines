@@ -32,6 +32,23 @@ def test_kl_handles_zero_estimate() -> None:
   assert out["KL"] > 0.0
 
 
+def test_kl_closed_form(tight: Callable[..., bool]) -> None:
+  est = torch.tensor([1.0, 2.0])
+  truth = torch.tensor([1.0, 1.0])
+  out = grid_metrics_density(est, truth, cell_area=1.0)
+  # I-divergence: [1*log1 - 1 + 1] + [1*log(1/2) - 1 + 2] = 1 + log(0.5)
+  assert tight(out["KL"], 1.0 + torch.log(torch.tensor(0.5)).item())
+
+
+def test_kl_nonnegative_when_estimate_overconcentrates() -> None:
+  # A plain truth*log(truth/est) would be negative here; the I-divergence form
+  # stays non-negative.
+  est = torch.tensor([100.0, 0.1])
+  truth = torch.tensor([1.0, 1.0])
+  out = grid_metrics_density(est, truth, cell_area=0.5)
+  assert out["KL"] >= 0.0
+
+
 def test_return_keys_and_types() -> None:
   out = grid_metrics_density(torch.ones(3), torch.ones(3), cell_area=1.0)
   assert set(out) == {"ISE", "IAE", "KL"}
