@@ -1,11 +1,10 @@
 """Median-error line plot of the simulation-study metrics (plotnine).
 
 Reads the long-format CSV written by ``sim_study_biv_tail.py`` and draws, for the
-bulk and tail estimators, the median error of each metric against the *tail
-count* ``k`` -- the effective sample size of the tail estimator, which grows
-only like ``sqrt(n)`` under ``q_n = n^{-1/2}``. Families are the facet rows and
-metrics the facet columns; the estimator is shown by line colour and the
-dependence level (Kendall's tau) by line type. Both axes are on a log scale.
+bulk and tail estimators, the median error of each metric against the sample
+size. Families are the facet rows and metrics the facet columns; the estimator
+is shown by line colour and the dependence level (Kendall's tau) by line type,
+so all dimensions sit in one figure. Both axes are on a log scale.
 
 Run (``plotnine`` lives in the ``interactive`` extra)::
 
@@ -31,6 +30,7 @@ from plotnine import (
   theme_bw,
 )
 
+N_BREAKS: tuple[int, ...] = (200, 500, 1000, 2000, 5000)
 FAMILY_ORDER: tuple[str, ...] = ("Clayton", "Gumbel", "Student")
 METRIC_ORDER: tuple[str, ...] = ("KL(c)", "KL(h)", "RE(p)")
 # (target, metric column, display label)
@@ -47,7 +47,7 @@ def load_long(path: Path) -> pd.DataFrame:
   frames = []
   for target, column, label in _METRICS:
     part = df[df["target"] == target][
-      ["family", "tau", "n", "k", "seed", "model", column]
+      ["family", "tau", "n", "seed", "model", column]
     ].rename(columns={column: "value"})
     part["metric"] = label
     frames.append(part)
@@ -66,36 +66,23 @@ def load_long(path: Path) -> pd.DataFrame:
 
 
 def make_plot(long: pd.DataFrame) -> ggplot:
-  """Median error vs tail count k: colour by estimator, line type by tau."""
-  med = (
-    long.groupby(["family", "metric", "n", "tau", "estimator"], observed=True)[
-      "value"
-    ]
-    .median()
-    .reset_index()
-  )
-  # Effective sample size: median tail count per (family, tau, n) cell.
-  kk = (
-    long.drop_duplicates(["family", "tau", "n", "seed"])
-    .groupby(["family", "tau", "n"], observed=True)["k"]
-    .median()
-    .reset_index()
-  )
-  med = med.merge(kk, on=["family", "tau", "n"])
+  """Median error vs n: colour by estimator, line type by Kendall's tau."""
+  keys = ["family", "metric", "n", "tau", "estimator"]
+  med = long.groupby(keys, observed=True)["value"].median().reset_index()
   med["series"] = med["estimator"] + " / " + med["tau"]
   return (
     ggplot(
       med,
-      aes(x="k", y="value", color="estimator", linetype="tau", group="series"),
+      aes(x="n", y="value", color="estimator", linetype="tau", group="series"),
     )
     + geom_line()
     + geom_point(size=1.3)
     + facet_grid("family ~ metric")
-    + scale_x_log10()
+    + scale_x_log10(breaks=N_BREAKS)
     + scale_y_log10()
     + scale_color_manual(values={"bulk": "#999999", "tail": "#E69F00"})
     + labs(
-      x="tail count k (log scale)",
+      x="sample size n (log scale)",
       y="median error (log scale; lower is better)",
       color="estimator",
       linetype="Kendall's tau",

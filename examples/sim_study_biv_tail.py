@@ -330,7 +330,7 @@ def build_parser() -> argparse.ArgumentParser:
   parser.add_argument(
     "--ns", nargs="+", type=int, default=[200, 500, 1000, 2000, 5000]
   )
-  parser.add_argument("--seeds", nargs="+", type=int, default=list(range(20)))
+  parser.add_argument("--seeds", nargs="+", type=int, default=list(range(30)))
   parser.add_argument("--nu", type=int, default=4)
   parser.add_argument("--grid-size", type=int, default=100)
   parser.add_argument("--eps", type=float, default=1e-4)
