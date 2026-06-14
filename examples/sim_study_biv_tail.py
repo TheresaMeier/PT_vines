@@ -43,12 +43,14 @@ from npptcop import ProbitTLL, TailCopula, grid_metrics_density, unit_grid
 
 LOG = logging.getLogger("sim_study_biv_tail")
 
-# Gaussian is listed last: it is tail-independent, the case where the tail
-# estimator is expected to do poorly.
+# All supported families (the --families choices and FAMILY_ROTATION keys).
 FAMILIES: tuple[str, ...] = ("clayton", "gumbel", "student", "gaussian")
+# Default study families: the three with tail dependence in the studied corner.
+# Gaussian is tail-independent, so it is omitted by default (still selectable).
+DEFAULT_FAMILIES: tuple[str, ...] = ("clayton", "gumbel", "student")
 # Each family is studied at the corner where its tail dependence concentrates
 # (pyvinecopulib density-rotation convention): Clayton lower-left, Gumbel
-# upper-right, the radially symmetric Student and Gaussian lower-left.
+# upper-right, the radially symmetric Student lower-left.
 FAMILY_ROTATION: dict[str, int] = {
   "clayton": 0,
   "gumbel": 180,
@@ -322,15 +324,15 @@ def build_parser() -> argparse.ArgumentParser:
     description="Parallel bivariate-tail simulation study for npptcop."
   )
   parser.add_argument(
-    "--families", nargs="+", choices=FAMILIES, default=list(FAMILIES)
+    "--families", nargs="+", choices=FAMILIES, default=list(DEFAULT_FAMILIES)
   )
   parser.add_argument("--taus", nargs="+", type=float, default=[0.4, 0.8])
   parser.add_argument(
-    "--ns", nargs="+", type=int, default=[100, 500, 1000, 5000]
+    "--ns", nargs="+", type=int, default=[200, 500, 1000, 2000, 5000]
   )
-  parser.add_argument("--seeds", nargs="+", type=int, default=list(range(10)))
+  parser.add_argument("--seeds", nargs="+", type=int, default=list(range(20)))
   parser.add_argument("--nu", type=int, default=4)
-  parser.add_argument("--grid-size", type=int, default=50)
+  parser.add_argument("--grid-size", type=int, default=100)
   parser.add_argument("--eps", type=float, default=1e-4)
   parser.add_argument("--min-tail-count", type=int, default=5)
   parser.add_argument("--ridge", type=float, default=1e-6)

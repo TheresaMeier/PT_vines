@@ -154,83 +154,27 @@ The final estimator is the bilinear interpolant of the scaled grid values
 \section{Numerical illustration}
 
 We illustrate the tail estimator on simulated data, comparing it to the bulk estimator evaluated in the same corner.
-Each family is studied at the corner where its tail dependence concentrates: the lower-left corner $[0,q_n]^2$ for Clayton and for the radially symmetric Student and Gaussian copulas, and the upper-right corner $[1-q_n,1]^2$ for Gumbel; the remaining corners follow by rotation.
+Each family is studied at the corner where its tail dependence concentrates: the lower-left corner $[0,q_n]^2$ for Clayton and for the radially symmetric Student copula, and the upper-right corner $[1-q_n,1]^2$ for Gumbel; the remaining corners follow by rotation.
 Write $L_n$ for the relevant corner block with $q_n=n^{-1/2}$.
 The tail estimator $\hat c_T$ of the previous section rescales the observations falling in $L_n$ by $1/q_n$; we also record the tail-conditional density $h$ on $[0,1]^2$ of these rescaled observations (normalised so that $\int h=1$), to which $\hat c_T$ relates by $\hat c_T=(p_n/q_n^2)\,h$ with $p_n$ the tail mass.
-We draw $n\in\{100,500,1000,5000\}$ observations from the Clayton, Gumbel, Student ($\nu=4$), and Gaussian copulas at Kendall's $\tau\in\{0.4,0.8\}$, with $10$ replications each; both $\hat c_B$ and $\hat c_T$ use the probit-transform local-likelihood estimator of \citet{geenens2017probit} with the constant, maximal-correlation bandwidth.
-On a $50\times50$ grid over the corner we report, for the copula density $c$ and the tail-conditional density $h$, the generalized Kullback--Leibler divergence (I-divergence) $\int[f\log(f/\hat f)-f+\hat f]$ between the truth $f$ and the estimate $\hat f$---the natural discrepancy when $c$ and $h$ are read as density estimators, non-negative for any non-negative $\hat f$ and reducing to the usual Kullback--Leibler divergence when both integrate to one---together with the relative error of the tail mass $p_n=\Pr\{(U,V)\in L_n\}$, estimated by $\hat p_B=\int_{L_n}\hat c_B$ for the bulk and by $\hat p_T=k/n$ for the tail, where $k=\#\{i:(U_i,V_i)\in L_n\}$.
-\Cref{tab:sim04,tab:sim08} report the mean (standard deviation) of each metric over the $10$ replications, one table per dependence level.
+We draw $n\in\{200,500,1000,2000,5000\}$ observations from the Clayton, Gumbel, and Student ($\nu=4$) copulas at Kendall's $\tau\in\{0.4,0.8\}$, with $20$ replications each; both $\hat c_B$ and $\hat c_T$ use the probit-transform local-likelihood estimator of \citet{geenens2017probit} with the constant, maximal-correlation bandwidth.
+On a $100\times100$ grid over the corner we report, for the copula density $c$ and the tail-conditional density $h$, the generalized Kullback--Leibler divergence (I-divergence) $\int[f\log(f/\hat f)-f+\hat f]$ between the truth $f$ and the estimate $\hat f$---the natural discrepancy when $c$ and $h$ are read as density estimators, non-negative for any non-negative $\hat f$ and reducing to the usual Kullback--Leibler divergence when both integrate to one---together with the relative error of the tail mass $p_n=\Pr\{(U,V)\in L_n\}$, estimated by $\hat p_B=\int_{L_n}\hat c_B$ for the bulk and by $\hat p_T=k/n$ for the tail, where $k=\#\{i:(U_i,V_i)\in L_n\}$.
+Because $q_n=n^{-1/2}$ shrinks with $n$, the corner holds only $k\approx\lambda\,n\,q_n=\lambda\sqrt{n}$ observations, where $\lambda$ is the tail-dependence coefficient of the relevant corner; $k$ is thus the effective sample size of the tail estimator, and we report errors against it.
+\Cref{fig:sim} shows the median of each metric over the $20$ replications as a function of $k$ (each marker is one sample size, and $k$ increases with $n$), with the estimators distinguished by colour and the dependence levels by line type.
 
-The tail estimator estimates the tail mass far more accurately and stably than the bulk estimator throughout.
-For the densities its advantage grows with the strength of dependence: the tail estimator beats the bulk in about $69\%$ of cells at $\tau=0.4$ and in $94$--$100\%$ at $\tau=0.8$, where it typically reduces the divergence several-fold for the tail-dependent Clayton, Gumbel, and Student families.
-The bulk estimator, which borrows strength from the whole sample, remains competitive only for the tail-independent Gaussian copula and in the data-poor regime---small $n$ or weak dependence, where few observations reach the corner and the standard deviations are correspondingly large.
-Under the $L^1$ error the same ordering holds but is more conservative, since $L^1$ weights the whole block equally rather than the high-density corner that the divergence emphasizes; the squared $L^2$ error is dominated by isolated small-sample spikes and we do not report it.
+The tail estimator estimates the tail mass far more accurately and stably than the bulk estimator at every $k$, and for the densities it beats the bulk in $80\%$ of the cells at $\tau=0.4$ and $93\%$ at $\tau=0.8$, typically reducing the divergence several-fold.
+The errors decay with $k$ at the expected rates: the relative tail-mass error like $k^{-1/2}$, the binomial standard error of $\hat p_T=k/n$, and the copula-density divergence faster still, whereas the bulk estimator---which borrows strength from the whole sample with a global bandwidth---is competitive only in the data-poor regime, the smallest and weakly dependent samples.
 
-\begin{table}[ht]
+Improvement is, however, slow in the \emph{sample size} $n$: since $k\approx\lambda\sqrt{n}$, an error decaying like $k^{-1/2}$ decays only like $n^{-1/4}$, so the gains across the range of $n$ are modest even though they are clear in $k$, and the tail-conditional density $h$ in particular barely improves over this range.
+A more slowly vanishing $q_n$ would enlarge $k$ and accelerate convergence in $n$, at the cost of a larger bias in the tail approximation; we leave the corresponding consistency analysis to future work.
+(Under the $L^1$ error the ordering is the same but more conservative; the squared $L^2$ error is dominated by isolated small-sample spikes and is not shown.)
+
+\begin{figure}[ht]
   \centering
-  \footnotesize
-  \begin{tabular}{llcccccc}
-    \hline
-    & & \multicolumn{2}{c}{KL($c$)} & \multicolumn{2}{c}{KL($h$)} & \multicolumn{2}{c}{RE($p_n$)} \\
-    family & $n$ & bulk & tail & bulk & tail & bulk & tail \\
-    \hline
-    Clayton  &  100 & 0.30 (0.14) & 0.18 (0.15) & 5.9 (2.2) & 3.1 (2.7) & 0.68 (0.38) & 0.52 (0.25) \\
-             &  500 & 0.54 (0.40) & 0.45 (0.70) & 20.3 (14.7) & 16.1 (25.8) & 0.39 (0.51) & 0.26 (0.13) \\
-             & 1000 & 0.32 (0.20) & 0.14 (0.10) & 17.2 (10.1) & 7.5 (6.1) & 0.23 (0.30) & 0.19 (0.09) \\
-             & 5000 & 0.16 (0.10) & 0.03 (0.03) & 19.3 (11.2) & 3.5 (4.0) & 0.17 (0.24) & 0.10 (0.08) \\
-    \hline
-    Gumbel   &  100 & 0.59 (0.18) & 0.21 (0.11) & 11.6 (3.4) & 3.9 (2.0) & 0.22 (0.15) & 0.05 (0.00) \\
-             &  500 & 0.46 (0.15) & 0.40 (0.17) & 20.6 (6.7) & 19.0 (6.8) & 0.23 (0.12) & 0.18 (0.17) \\
-             & 1000 & 0.24 (0.16) & 0.11 (0.09) & 15.6 (9.8) & 7.1 (6.1) & 0.32 (0.41) & 0.22 (0.11) \\
-             & 5000 & 0.11 (0.07) & 0.02 (0.02) & 16.6 (10.4) & 3.2 (3.4) & 0.14 (0.08) & 0.11 (0.10) \\
-    \hline
-    Student  &  100 & 0.22 (0.18) & 0.60 (0.72) & 5.5 (4.1) & 12.6 (16.8) & 0.93 (0.52) & 0.48 (0.23) \\
-             &  500 & 0.21 (0.18) & 0.28 (0.39) & 12.2 (10.0) & 15.9 (21.7) & 0.37 (0.23) & 0.21 (0.18) \\
-             & 1000 & 0.16 (0.10) & 0.11 (0.09) & 13.3 (8.2) & 9.0 (7.7) & 0.36 (0.43) & 0.30 (0.16) \\
-             & 5000 & 0.07 (0.04) & 0.02 (0.02) & 15.4 (7.9) & 4.2 (3.5) & 0.22 (0.20) & 0.17 (0.09) \\
-    \hline
-    Gaussian &  100 & 0.04 (0.02) & 0.22 (0.31) & 0.7 (0.2) & 3.5 (4.2) & 1.55 (0.47) & 0.83 (0.00) \\
-             &  500 & 0.02 (0.01) & 0.06 (0.07) & 1.8 (1.1) & 4.4 (5.7) & 0.40 (0.34) & 0.26 (0.23) \\
-             & 1000 & 0.01 (0.00) & 0.03 (0.01) & 1.4 (0.5) & 2.7 (1.6) & 0.45 (0.22) & 0.34 (0.28) \\
-             & 5000 & 0.01 (0.00) & 0.01 (0.00) & 3.1 (0.8) & 2.6 (1.6) & 0.69 (1.25) & 0.28 (0.15) \\
-    \hline
-  \end{tabular}
-  \caption{Generalized Kullback--Leibler divergence of the copula density $c$ and the tail-conditional density $h$, and relative error of the tail mass $p_n$, for the bulk ($\hat c_B$) and tail ($\hat c_T$) estimators at Kendall's $\tau=0.4$. Entries are mean (standard deviation) over $10$ seeds (lower is better). Gumbel is evaluated at the upper-right corner, the other families at the lower-left.}
-  \label{tab:sim04}
-\end{table}
-
-\begin{table}[ht]
-  \centering
-  \footnotesize
-  \begin{tabular}{llcccccc}
-    \hline
-    & & \multicolumn{2}{c}{KL($c$)} & \multicolumn{2}{c}{KL($h$)} & \multicolumn{2}{c}{RE($p_n$)} \\
-    family & $n$ & bulk & tail & bulk & tail & bulk & tail \\
-    \hline
-    Clayton  &  100 & 3.00 (2.88) & 1.71 (1.80) & 37.9 (26.3) & 20.3 (18.2) & 1.82 (2.89) & 0.35 (0.21) \\
-             &  500 & 2.32 (1.71) & 1.04 (1.11) & 60.1 (37.5) & 24.5 (27.3) & 1.20 (2.11) & 0.20 (0.18) \\
-             & 1000 & 1.39 (0.90) & 0.53 (0.57) & 50.8 (28.8) & 18.5 (19.3) & 0.48 (0.67) & 0.10 (0.08) \\
-             & 5000 & 0.70 (0.37) & 0.14 (0.15) & 55.9 (26.5) & 10.8 (11.5) & 0.42 (0.91) & 0.09 (0.06) \\
-    \hline
-    Gumbel   &  100 & 1.49 (0.85) & 1.11 (0.60) & 19.4 (9.4) & 13.9 (7.0) & 2.48 (5.62) & 0.19 (0.12) \\
-             &  500 & 1.05 (0.52) & 0.50 (0.43) & 28.6 (12.8) & 12.7 (11.6) & 0.29 (0.24) & 0.19 (0.15) \\
-             & 1000 & 0.78 (0.57) & 0.34 (0.29) & 30.5 (20.0) & 12.9 (10.5) & 0.49 (0.63) & 0.13 (0.07) \\
-             & 5000 & 0.36 (0.14) & 0.07 (0.05) & 30.8 (11.2) & 6.1 (4.4) & 0.27 (0.28) & 0.10 (0.08) \\
-    \hline
-    Student  &  100 & 0.59 (0.77) & 0.49 (0.60) & 9.1 (8.3) & 6.1 (7.4) & 1.26 (0.89) & 0.34 (0.26) \\
-             &  500 & 0.65 (0.55) & 0.46 (0.60) & 19.4 (15.2) & 12.6 (17.3) & 1.36 (3.06) & 0.21 (0.20) \\
-             & 1000 & 0.40 (0.28) & 0.19 (0.16) & 17.3 (10.9) & 8.1 (6.6) & 0.63 (1.00) & 0.12 (0.07) \\
-             & 5000 & 0.19 (0.15) & 0.05 (0.06) & 18.8 (13.0) & 4.2 (5.3) & 0.67 (1.50) & 0.08 (0.08) \\
-    \hline
-    Gaussian &  100 & 0.18 (0.25) & 0.20 (0.23) & 2.7 (3.0) & 2.4 (3.1) & 1.07 (0.75) & 0.36 (0.27) \\
-             &  500 & 0.24 (0.16) & 0.19 (0.33) & 7.1 (5.1) & 5.7 (9.9) & 1.08 (2.53) & 0.21 (0.19) \\
-             & 1000 & 0.16 (0.11) & 0.07 (0.05) & 7.3 (4.9) & 3.4 (2.9) & 0.48 (0.67) & 0.12 (0.08) \\
-             & 5000 & 0.07 (0.05) & 0.02 (0.02) & 7.4 (5.5) & 1.7 (1.8) & 0.36 (0.52) & 0.08 (0.07) \\
-    \hline
-  \end{tabular}
-  \caption{As \cref{tab:sim04} but at Kendall's $\tau=0.8$.}
-  \label{tab:sim08}
-\end{table}
+  \includegraphics[width=\textwidth]{figures/sim_study.png}
+  \caption{Median error of the bulk ($\hat c_B$) and tail ($\hat c_T$) estimators against the tail count $k$, over $20$ replications, for $n\in\{200,500,1000,2000,5000\}$ at Kendall's $\tau\in\{0.4,0.8\}$: generalized Kullback--Leibler divergence of the copula density $c$ and the tail-conditional density $h$, and relative error of the tail mass $p_n$ (columns). Both axes are logarithmic and lower is better. Gumbel is evaluated at the upper-right corner, Clayton and Student at the lower-left.}
+  \label{fig:sim}
+\end{figure}
 
 \section{Asymptotic properties of the piece-together estimator}
 TODO:
