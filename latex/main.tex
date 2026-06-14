@@ -167,7 +167,7 @@ The bulk estimator, which borrows strength from the whole sample with a global b
 Improvement with the sample size $n$ is, however, slow, especially for the tail-conditional density $h$.
 This is expected: because $q_n=n^{-1/2}$, the corner block holds only $k\approx\lambda\,n\,q_n=\lambda\sqrt{n}$ observations, where $\lambda$ is the tail-dependence coefficient of the relevant corner, so the effective sample size of the tail estimator grows only like $\sqrt n$; an error decaying at the usual $k^{-1/2}$ rate---for instance the binomial standard error of $\hat p_T=k/n$---is therefore only $n^{-1/4}$ in the sample size.
 A more slowly vanishing $q_n$ would enlarge $k$ and accelerate convergence in $n$, at the cost of a larger bias in the tail approximation; we leave the corresponding consistency analysis to future work.
-(Under the $L^1$ error the ordering is the same but more conservative; the squared $L^2$ error is dominated by isolated small-sample spikes and is not shown.)
+We measure the densities with this divergence rather than an unweighted distance because it weights the discrepancy by the true density, and hence by the corner that the tail estimator is built to resolve. This is not a cosmetic choice: under the uniformly weighted $L^1$ distance the globally smoother bulk estimator is in fact preferred for the densities (the tail estimator wins only about $18\%$ of the cells), and the Hellinger distance, which down-weights the corner less aggressively, is intermediate---favouring the tail estimator only at $\tau=0.8$. The tail estimator's advantage is thus concentrated where the density is largest, exactly where the divergence places its weight.
 
 \begin{figure}[ht]
   \centering
