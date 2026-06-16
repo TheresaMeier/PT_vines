@@ -126,7 +126,7 @@ Then, for observations falling in $Q_n$, define the rescaled variables $S=(S_1, 
   =
   \frac{\hat p_{q_n}}{q_n^2}\hat h_{q_n}\left(u_1/q_n,u_2/q_n\right),
 \end{align}
-where the $T$ subscript stands for \emph{tail} and the conditional density of the rescaled tail observations is estimated as
+where the $T$ subscript stands for \emph{tail}, $\hat p_{q_n} = k_n/n$ with $k_n$ the number of observations in $Q_n$ is an estimate of the tail probability $p_{q_n} = C(q_n,q_n)$, and the conditional density of the rescaled tail observations is estimated as
 \begin{align*}
   \hat h_{q_n}(s_1,s_2)
   =
@@ -146,18 +146,18 @@ and
     \frac{z_2-Z_{2}^{(i)}}{h_n}
   \right),
 \end{align*}
-with $k_n$ the number of observations in $Q_n$, $K_T$ a standard bivariate Gaussian kernel and $h_n>0$ a bandwidth parameter.
+$K_T$ a standard bivariate Gaussian kernel and $h_n>0$ a bandwidth parameter.
 
 \subsection{Numerical illustration}
 
 We illustrate the tail estimator of \cref{eq:tail_estimator} on simulated data, comparing it to the bulk estimator of \cref{eq:bulk_estimator} evaluated in the same corner.
-We let $q_n=n^{-1/2}$, a common choice in the literature \citep{schmidt2006non}.
+We let $q_n=n^{-1/2}$, so the number of tail observations $k_n$ is of order $\sqrt n$.
 
 We draw $n\in\{200,500,1000,2000,5000\}$ observations from the Clayton, Gumbel, and Student ($\nu=4$) copulas at Kendall's $\tau\in\{0.4,0.8\}$, with $30$ replications each.
 Each family is studied at the corner where its tail dependence concentrates: the lower-left corner for Clayton and for the radially symmetric Student copula, and the upper-right corner for Gumbel; the remaining corners follow by rotation.
 
-On a $100\times100$ grid over the corner we report, for the copula density $c$ and the tail-conditional density $h$, the generalized Kullback--Leibler divergence (I-divergence) $\int[f\log(f/\hat f)-f+\hat f]$ between the truth $f$ and the estimate $\hat f$---the natural discrepancy when $c$ and $h$ are read as density estimators, non-negative for any non-negative $\hat f$ and reducing to the usual Kullback--Leibler divergence when both integrate to one---together with the relative error of the tail mass $p_n=\Pr\{(U_1,U_2)\in Q_n\}$, estimated by $\hat p_B=\int_{Q_n}\hat c_B$ for the bulk and by $\hat p_T=k_n/n$ for the tail.
-\Cref{fig:sim} shows the median of each metric over the $30$ replications as a function of the sample size $n$, with the estimators distinguished by colour and the dependence levels by line type.
+On a $100\times100$ grid over the corner we report, for the copula density $c$ and the tail-conditional density $h$, the generalized Kullback--Leibler divergence (I-divergence) $\int[f\log(f/\hat f)-f+\hat f]$ between the truth $f$ and the estimate $\hat f$---the natural discrepancy when $c$ and $h$ are read as density estimators, non-negative for any non-negative $\hat f$ and reducing to the usual Kullback--Leibler divergence when both integrate to one---together with the relative error of the tail mass estimated by $\hat p_B=\int_{Q_n}\hat c_B$ for the bulk and by $\hat p_T=k_n/n$ for the tail.
+\Cref{fig:sim} shows the median of each metric over the $30$ replications as a function of the sample size $n$, with the estimators distinguished by color and the dependence levels by line type.
 
 The tail estimator clearly outperforms the bulk: it estimates the tail mass more accurately in $97\%$ of the cells and the densities in $88\%$ (about $80$--$87\%$ at $\tau=0.4$, rising to $93\%$ at $\tau=0.8$), typically reducing the divergence several-fold, and this ordering is stable across $n$ with the largest gains at strong dependence.
 The bulk estimator, which borrows strength from the whole sample with a global bandwidth, is competitive only in the data-poor regime---the smallest and weakly dependent samples.
@@ -165,7 +165,8 @@ The bulk estimator, which borrows strength from the whole sample with a global b
 Improvement with the sample size $n$ is, however, slow, especially for the tail-conditional density $h$.
 This is expected: because $q_n=n^{-1/2}$, the corner block holds only $k\approx\lambda\,n\,q_n=\lambda\sqrt{n}$ observations, where $\lambda$ is the tail-dependence coefficient of the relevant corner, so the effective sample size of the tail estimator grows only like $\sqrt n$; an error decaying at the usual $k^{-1/2}$ rate---for instance the binomial standard error of $\hat p_T=k/n$---is therefore only $n^{-1/4}$ in the sample size.
 A more slowly vanishing $q_n$ would enlarge $k$ and accelerate convergence in $n$, at the cost of a larger bias in the tail approximation; we leave the corresponding consistency analysis to future work.
-We measure the densities with this divergence rather than an unweighted distance because it weights the discrepancy by the true density, and hence by the corner that the tail estimator is built to resolve. This is not a cosmetic choice: under the uniformly weighted $L^1$ distance the globally smoother bulk estimator is in fact preferred for the densities (the tail estimator wins only about $18\%$ of the cells), and the Hellinger distance, which down-weights the corner less aggressively, is intermediate---favouring the tail estimator only at $\tau=0.8$. The tail estimator's advantage is thus concentrated where the density is largest, exactly where the divergence places its weight.
+
+% We measure the densities with this divergence rather than an unweighted distance because it weights the discrepancy by the true density, and hence by the corner that the tail estimator is built to resolve. This is not a cosmetic choice: under the uniformly weighted $L^1$ distance the globally smoother bulk estimator is in fact preferred for the densities (the tail estimator wins only about $18\%$ of the cells), and the Hellinger distance, which down-weights the corner less aggressively, is intermediate---favouring the tail estimator only at $\tau=0.8$. The tail estimator's advantage is thus concentrated where the density is largest, exactly where the divergence places its weight.
 
 \begin{figure}[ht]
   \centering
