@@ -48,6 +48,10 @@ In scope:
 - bivariate copula *density* estimation (not CDF, sampling, or fitting);
 - the corner tail estimator on a block of size `q` (lower-left corner as the
   primitive; the other three corners via `rotation`);
+- a parametric alternative to the corner tail estimator: maximum-likelihood fits
+  (`scipy.optimize`) of classical extreme-value tail copula density families
+  (Husler-Reiss, negative logistic, logistic, Dirichlet) sharing the same
+  corner/`p`/`q` semantics, differing only in how `h` is estimated;
 - the probit-transform local-likelihood KDE building block (Geenens bulk
   estimator);
 - constant-method bandwidth selection (Pearson-correlation covariance with an
@@ -76,7 +80,10 @@ src/npptcop/
   bandwidth.py    # constant-method TLL bandwidth: _ace/_cef/_win_smoother/
                   #   _pearson_cor/_pairwise_mcor + select_bandwidth_constant
   kde.py          # ProbitTLL: probit-transform local-likelihood Gaussian KDE
-  tail.py         # TailCopula (rotation 0/90/180/270) + TailFit; exposes h/c/r/p
+  tail.py         # TailCopula (rotation 0/90/180/270) + TailFit; exposes h/c/r/p;
+                  #   _corner_tail_data (shared corner-extraction helper)
+  parametric.py   # ParametricTailCopula + ParametricTailFit: MLE-fit EV tail
+                  #   families (husler_reiss/neg_logistic/logistic/dirichlet)
   metrics.py      # grid_metrics_density (ISE/IAE/KL) + unit_grid helper
 ```
 
@@ -93,13 +100,20 @@ frozen canonical-run regression).
 - `kde.ProbitTLL` owns the local-likelihood fit and evaluation; `evaluate`
   returns the bulk density `ĉ_B`, `density` the raw probit-scale `f̂`.
 - `tail.TailCopula` composes a `ProbitTLL` on the rescaled corner data and owns
-  the `h`/`c`/`r` relations, the tail mass `p`, and the rotation handling.
+  the `h`/`c`/`r` relations, the tail mass `p`, the rotation handling, and the
+  shared `_corner_tail_data` corner-extraction helper.
+- `parametric.ParametricTailCopula` reuses `tail`'s `_corner_tail_data` and the
+  `h`/`c`/`r`/`p` relations, replacing the KDE with a maximum-likelihood fit of a
+  parametric tail copula density family (the paper's `lambda`); densities are
+  evaluated in log-space and normalized on the unit square by closed-form `Z`.
 - `metrics` owns evaluation-only diagnostics and is never imported by estimators.
 
 The curated public API (`__init__.__all__`) is `ProbitTLL`, `TailCopula`,
-`TailFit`, `grid_metrics_density`, `unit_grid`. `transforms` and `bandwidth` are
-internal. Tests import from the public API, except `test_bandwidth.py`, which
-imports the `tools_stats` helpers directly to pin their C++-equivalent behavior.
+`TailFit`, `ParametricTailCopula`, `ParametricTailFit`, `grid_metrics_density`,
+`unit_grid`. `transforms` and `bandwidth` are internal. Tests import from the
+public API, except `test_bandwidth.py` and `test_parametric.py`, which import
+internals directly (`tools_stats` helpers; the `_FAMILIES` registry) to pin
+their numerical behavior.
 
 ### Mathematical conventions and notation
 

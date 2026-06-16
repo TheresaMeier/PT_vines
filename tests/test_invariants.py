@@ -11,6 +11,8 @@ from npptcop import ProbitTLL, TailCopula, unit_grid
 
 def test_public_api_surface() -> None:
   assert set(npptcop.__all__) == {
+    "ParametricTailCopula",
+    "ParametricTailFit",
     "ProbitTLL",
     "TailCopula",
     "TailFit",

@@ -38,6 +38,28 @@ def _reflect(u: Tensor, rotation: int) -> Tensor:
   return torch.stack((u[:, 0], 1.0 - u[:, 1]), dim=1)
 
 
+def _corner_tail_data(
+  u: Tensor, q: float, rotation: int
+) -> tuple[Tensor, int, int]:
+  """Extract the rescaled corner observations shared by the tail estimators.
+
+  Reflect ``u`` to the chosen corner, mask to ``[0, q]^2``, rescale by ``1 / q``,
+  and clamp to ``(0, 1)``. Returns ``(s_data, k, n)`` where ``s_data`` is the
+  ``(k, 2)`` tensor of rescaled tail points, ``k`` the tail count, and ``n`` the
+  sample size; raises ``ValueError`` if the tail block is empty.
+  """
+  u = torch.as_tensor(u, dtype=torch.float64)
+  n = u.shape[0]
+  corner = _reflect(u, rotation)
+  mask = (corner[:, 0] <= q) & (corner[:, 1] <= q)
+  tail = corner[mask]
+  k = int(tail.shape[0])
+  if k == 0:
+    raise ValueError(f"no observations fall in the tail block [0, {q}]^2")
+  s_data = (tail / q).clamp(_CLAMP_EPS, 1.0 - _CLAMP_EPS)
+  return s_data, k, n
+
+
 @dataclass(frozen=True)
 class TailFit:
   """Fitted tail summary: cutoff ``q``, tail mass ``p = k / n``, tail count ``k``,
@@ -84,17 +106,7 @@ class TailCopula:
     """Reflect to the chosen corner, mask to ``[0, q]^2``, rescale by ``1 / q``,
     and fit the tail KDE; records the tail mass ``p = k / n``.
     """
-    u = torch.as_tensor(u, dtype=torch.float64)
-    n = u.shape[0]
-    corner = _reflect(u, self.rotation)
-    mask = (corner[:, 0] <= self.q) & (corner[:, 1] <= self.q)
-    tail = corner[mask]
-    k = int(tail.shape[0])
-    if k == 0:
-      raise ValueError(
-        f"no observations fall in the tail block [0, {self.q}]^2"
-      )
-    s_data = (tail / self.q).clamp(_CLAMP_EPS, 1.0 - _CLAMP_EPS)
+    s_data, k, n = _corner_tail_data(u, self.q, self.rotation)
     self._kde.fit(s_data)
     self._n = n
     self._k = k

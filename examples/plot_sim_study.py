@@ -33,6 +33,25 @@ from plotnine import (
 N_BREAKS: tuple[int, ...] = (200, 500, 1000, 2000, 5000)
 FAMILY_ORDER: tuple[str, ...] = ("Clayton", "Gumbel", "Student")
 METRIC_ORDER: tuple[str, ...] = ("KL(c)", "KL(h)", "RE(p)")
+# Display model -> estimator label (line colour); the parametric tail families
+# join the nonparametric bulk/tail estimators on the same axes.
+ESTIMATOR_LABELS: dict[str, str] = {
+  "Ordinary": "bulk",
+  "Tail": "tail",
+  "HR": "HR",
+  "NegLogistic": "neg-logistic",
+  "Logistic": "logistic",
+  "Dirichlet": "Dirichlet",
+}
+# Okabe-Ito colourblind-safe palette.
+ESTIMATOR_COLORS: dict[str, str] = {
+  "bulk": "#999999",
+  "tail": "#E69F00",
+  "HR": "#56B4E9",
+  "neg-logistic": "#009E73",
+  "logistic": "#0072B2",
+  "Dirichlet": "#CC79A7",
+}
 # (target, metric column, display label)
 _METRICS: tuple[tuple[str, str, str], ...] = (
   ("c", "KL", "KL(c)"),
@@ -53,7 +72,8 @@ def load_long(path: Path) -> pd.DataFrame:
     frames.append(part)
   long = pd.concat(frames, ignore_index=True)
   long = long[long["value"] > 0.0]  # log scale needs strictly positive values
-  long["estimator"] = long["model"].map({"Ordinary": "bulk", "Tail": "tail"})
+  long["estimator"] = long["model"].map(ESTIMATOR_LABELS)
+  long = long.dropna(subset=["estimator"])  # drop any unmapped model
   long = long[long["family"].isin([f.lower() for f in FAMILY_ORDER])]
   long["family"] = pd.Categorical(
     long["family"].str.capitalize(), categories=FAMILY_ORDER, ordered=True
@@ -80,7 +100,7 @@ def make_plot(long: pd.DataFrame) -> ggplot:
     + facet_grid("family ~ metric")
     + scale_x_log10(breaks=N_BREAKS)
     + scale_y_log10()
-    + scale_color_manual(values={"bulk": "#999999", "tail": "#E69F00"})
+    + scale_color_manual(values=ESTIMATOR_COLORS)
     + labs(
       x="sample size n (log scale)",
       y="median error (log scale; lower is better)",

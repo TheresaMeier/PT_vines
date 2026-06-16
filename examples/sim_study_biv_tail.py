@@ -39,7 +39,13 @@ import pyvinecopulib as pv
 import torch
 from torch import Tensor
 
-from npptcop import ProbitTLL, TailCopula, grid_metrics_density, unit_grid
+from npptcop import (
+  ParametricTailCopula,
+  ProbitTLL,
+  TailCopula,
+  grid_metrics_density,
+  unit_grid,
+)
 
 LOG = logging.getLogger("sim_study_biv_tail")
 
@@ -56,6 +62,14 @@ FAMILY_ROTATION: dict[str, int] = {
   "gumbel": 180,
   "student": 0,
   "gaussian": 0,
+}
+# Parametric tail families compared against the nonparametric "Tail" estimator
+# (display name -> ParametricTailCopula family), from the X-Vine companion code.
+PARAMETRIC_MODELS: dict[str, str] = {
+  "HR": "husler_reiss",
+  "NegLogistic": "neg_logistic",
+  "Logistic": "logistic",
+  "Dirichlet": "dirichlet",
 }
 COLUMNS: tuple[str, ...] = (
   "seed",
@@ -303,6 +317,22 @@ def run_combo(spec: ComboSpec) -> ComboResult:
     truths = {"r": r_true, "h": h_true, "c": c_true}
     cell_areas = {"r": cell_area, "h": cell_area, "c": cell_area_tail}
     p_hats = {"Ordinary": p_body, "Tail": tail.fit_.p}
+
+    # Parametric MLE fits share the corner (and thus p) with "Tail"; a failed
+    # fit (e.g. a near-independent tail) drops just that model, not the cell.
+    for model, family in PARAMETRIC_MODELS.items():
+      try:
+        par_est = ParametricTailCopula(family, q, rotation=spec.rotation).fit(
+          u_data
+        )
+      except Exception:  # noqa: BLE001 - one model failing must not kill the cell
+        continue
+      ests[model] = {
+        "r": par_est.r(grid),
+        "h": par_est.h(grid),
+        "c": par_est.c(grid),
+      }
+      p_hats[model] = par_est.fit_.p
 
     rows = _metric_rows(spec, q, k, ests, truths, cell_areas, p_hats, p_true)
     return ComboResult(spec, "ok", k, rows)
