@@ -48,76 +48,142 @@
 
 \maketitle
 
-\section{Idea}
+\section{Setup}
 
-Let $(U,V)$ be an absolutely continuous random vector with standard uniform margins, and assume that one is interested in estimating its density $c$, called a copula density, based on a random sample $(U_i,V_i)_{i=1}^n$.
-Fix a threshold $q_n \downarrow 0$ and write $Q_n=[1 - q_n,1]^2$ for the tail region. In this note, we propose to estimate $c$ by piecing together a bulk estimator on $Q_n^c=[0,1]^2 \setminus Q_n$ and a tail estimator on $Q_n$.
+Let $U=(U_1,U_2)^\top \sim C$ be an absolutely continuous random vector with standard uniform margins. In other words, $C$ is a copula, and we denote by $c$ its density.
+Assume that one is interested in nonparametrically estimating $c$ based on a random sample $U^{(i)}=(U_{1}^{(i)},U_{2}^{(i)})^\top$, $i=1,\ldots,n$.
+Several such estimators have been proposed in the literature, and we refer to \citet{nagler2017nonparametric} for a review and benchmark comparison.
+In this paper, we focus on the probit-transformed local-likelihood estimator of \citet{geenens2017probit} for three reasons: it is the best-performing estimator in the benchmark study, it is easy to implement and use, and its asymptotic properties are well understood.
 
-For the bulk, we use the estimator of \citet{geenens2017probit}.
-Define the probit-transformed vector $(X,Y)=(\Phi^{-1}(U),\Phi^{-1}(V))$, estimate its density using a Gaussian kernel, and back-transform the resulting density estimator to $[0,1]^2$, that is
-\begin{align*}
-  \hat c_{B}(u,v)
+Define the probit-transformed vector $X=(X_1,X_2)^\top=(\Phi^{-1}(U_1),\Phi^{-1}(U_2))$, estimate its density using a Gaussian kernel, and back-transform the resulting density estimator to $[0,1]^2$, that is
+\begin{align} \label{eq:bulk_estimator}
+  \hat c_{B}(u_1,u_2)
   =
   \frac{
-    \hat f(\Phi^{-1}(u),\Phi^{-1}(v))
+    \hat f_B(\Phi^{-1}(u_1),\Phi^{-1}(u_2))
   }{
-    \phi(\Phi^{-1}(u))\phi(\Phi^{-1}(v))
+    \phi(\Phi^{-1}(u_1))\phi(\Phi^{-1}(u_2))
   },
-\end{align*}
-where
+\end{align}
+where the subscript $B$ stands for \emph{bulk} and
 \begin{align*}
-  \hat f(x,y)
+  \hat f_B(x_1,x_2)
   =
   \frac{1}{n b_n^2}
   \sum_{i=1}^n
   K_B\left(
-    \frac{x-X_i}{b_n},
-    \frac{y-Y_i}{b_n}
+    \frac{x_1-X_{1}^{(i)}}{b_n},
+    \frac{x_2-X_{2}^{(i)}}{b_n}
   \right),
 \end{align*}
 with $K_B$ the standard bivariate Gaussian kernel and $b_n>0$ a bandwidth parameter.
+While, this nonparametric estimator outperforms competitors in the benchmarking study of \citet{nagler2017nonparametric}, it is not designed to capture the tail behavior of the copula density.
 
-For the upper tail, we use the approximation $c(1-qs,1-qt)
-\approx
-\frac{1}{q}\lambda(s,t)$ for $q\to0$ and $(s,t)\in (0,1)^2$, with $\lambda$ the upper tail density.
-In other words, for
-observations falling in the tail block $Q_n$, we define the rescaled variables $(S,T)=((1-U)/q_n,(1-V)/q_n)$ as well as their probit transforms $(W,Z)=(\Phi^{-1}(S),\Phi^{-1}(T))$, estimate the tail density using a Gaussian kernel as above, and back-transform the resulting density estimator to $[0,1]^2$, that is
-\begin{align*}
-  \hat c_T(u,v)
+\section{Kernel Density Estimation of the Tail Copula Density}
+For a threshold $q\to0$, define the (lower) tail as a vanishing region $Q_q=[0, q]^2$ with probability mass $p_q=C(q,q)$, and
+the (lower) tail copula \citep{schmidt2006non} as the homogeneous limit function
+\begin{align*}%\label{eq:tail_copula}
+  \Lambda(s_1,s_2)
   =
-  \frac{1}{q_n}
-  \hat\lambda\left((1-u)/q_n,(1-v)/q_n\right),
+  \lim_{q\rightarrow0}
+  q^{-1}C(qs_1,qs_2),
+  \qquad (s_1,s_2)\in[0,\infty)^2,
 \end{align*}
-where the upper tail density is estimated by
+whenever the limit exists and the tail dependence coefficient $\Lambda(1,1)$ corresponds to the rescaled probability of joint extreme events.
+Assume that $\Lambda(1,1)>0$ and that the restriction of $\Lambda$ to $(0,1)^2$ is absolutely
+continuous with tail density
 \begin{align*}
-  \hat \lambda(s,t)
+  \lambda(s_1,s_2)
+  =
+  \frac{\partial^2}{\partial s_1\partial s_2}\Lambda(s_1,s_2),
+  \qquad (s_1,s_2)\in(0,1)^2.
+\end{align*}
+Note that it is different from the conditional density of the rescaled observations in the tail block $Q_q$, which is defined as
+\begin{align*}
+  h_q(s_1,s_2)
+  =
+  \frac{\Pr\{U/q \in ds \mid U \in Q_q\}}{ds} = \frac{q^2 c(qs_1,qs_2)}{p_q},
+  \qquad (s_1,s_2)\in(0,1)^2,
+\end{align*}
+whose limit can be written as
+\begin{align*}
+  h(s_1,s_2)
+  =
+  \lim_{q\to0}h_q(s_1,s_2)
+  =
+  \frac{\lambda(s_1,s_2)}{\Lambda(1,1)},
+  \qquad (s_1,s_2)\in(0,1)^2.
+\end{align*}
+For $(u_1,u_2)\in Q_q$, we use the approximations $h_q \approx h$ and $p_q / q \approx \Lambda(1,1)$ so that
+\begin{align*}
+  c(u_1,u_2) = \frac{p_q}{q^2} h_q(u_1/q,u_2/q) \approx \frac{1}{q}\lambda(u_1/q,u_2/q).
+\end{align*}
+
+To use this approximation in practice, make the threshold vanish with the number of observations, $q_n \to 0$, and write $Q_n=[0, q_n]^2$ for the tail region.
+Then, for observations falling in $Q_n$, define the rescaled variables $S=(S_1, S_2)^{\top}=(U_1/q_n,U_2/q_n)$ as well as their probit transforms $(Z_1,Z_2)=(\Phi^{-1}(S_1),\Phi^{-1}(S_2))$, estimate the conditional density of the rescaled observations using a Gaussian kernel as above, and back-transform the resulting density estimator to $[0,1]^2$, that is
+\begin{align} \label{eq:tail_estimator}
+  \hat c_T(u_1,u_2)
+  =
+  \frac{\hat p_{q_n}}{q_n^2}\hat h_{q_n}\left(u_1/q_n,u_2/q_n\right),
+\end{align}
+where the $T$ subscript stands for \emph{tail} and the conditional density of the rescaled tail observations is estimated as
+\begin{align*}
+  \hat h_{q_n}(s_1,s_2)
   =
   \frac{
-    \hat g(\Phi^{-1}(s),\Phi^{-1}(t))
+    \hat f_T(\Phi^{-1}(s_1),\Phi^{-1}(s_2))
   }{
-    \phi(\Phi^{-1}(s))\phi(\Phi^{-1}(t))
+    \phi(\Phi^{-1}(s_1))\phi(\Phi^{-1}(s_2))
   },
 \end{align*}
 and
 \begin{align*}
-  \hat g(w,z)
+  \hat f_T(z_1, z_2)
   =
-  \frac{1}{n q_n h_n^2}
-  \sum_{i:(U_i,V_i)\in Q_n}
+  \frac{1}{k_n h_n^2} \sum_{i:(U_{1}^{(i)},U_{2}^{(i)})\in Q_n}
   K_T\left(
-    \frac{w-W_i}{h_n},
-    \frac{z-Z_i}{h_n}
+    \frac{z_1-Z_{1}^{(i)}}{h_n},
+    \frac{z_2-Z_{2}^{(i)}}{h_n}
   \right),
 \end{align*}
-with $K_T$ a standard bivariate Gaussian kernel and $h_n>0$ a bandwidth parameter.
+with $k_n$ the number of observations in $Q_n$, $K_T$ a standard bivariate Gaussian kernel and $h_n>0$ a bandwidth parameter.
 
+\subsection{Numerical illustration}
+
+We illustrate the tail estimator of \cref{eq:tail_estimator} on simulated data, comparing it to the bulk estimator of \cref{eq:bulk_estimator} evaluated in the same corner.
+We let $q_n=n^{-1/2}$, a common choice in the literature \citep{schmidt2006non}.
+
+We draw $n\in\{200,500,1000,2000,5000\}$ observations from the Clayton, Gumbel, and Student ($\nu=4$) copulas at Kendall's $\tau\in\{0.4,0.8\}$, with $30$ replications each.
+Each family is studied at the corner where its tail dependence concentrates: the lower-left corner for Clayton and for the radially symmetric Student copula, and the upper-right corner for Gumbel; the remaining corners follow by rotation.
+
+On a $100\times100$ grid over the corner we report, for the copula density $c$ and the tail-conditional density $h$, the generalized Kullback--Leibler divergence (I-divergence) $\int[f\log(f/\hat f)-f+\hat f]$ between the truth $f$ and the estimate $\hat f$---the natural discrepancy when $c$ and $h$ are read as density estimators, non-negative for any non-negative $\hat f$ and reducing to the usual Kullback--Leibler divergence when both integrate to one---together with the relative error of the tail mass $p_n=\Pr\{(U_1,U_2)\in Q_n\}$, estimated by $\hat p_B=\int_{Q_n}\hat c_B$ for the bulk and by $\hat p_T=k_n/n$ for the tail.
+\Cref{fig:sim} shows the median of each metric over the $30$ replications as a function of the sample size $n$, with the estimators distinguished by colour and the dependence levels by line type.
+
+The tail estimator clearly outperforms the bulk: it estimates the tail mass more accurately in $97\%$ of the cells and the densities in $88\%$ (about $80$--$87\%$ at $\tau=0.4$, rising to $93\%$ at $\tau=0.8$), typically reducing the divergence several-fold, and this ordering is stable across $n$ with the largest gains at strong dependence.
+The bulk estimator, which borrows strength from the whole sample with a global bandwidth, is competitive only in the data-poor regime---the smallest and weakly dependent samples.
+
+Improvement with the sample size $n$ is, however, slow, especially for the tail-conditional density $h$.
+This is expected: because $q_n=n^{-1/2}$, the corner block holds only $k\approx\lambda\,n\,q_n=\lambda\sqrt{n}$ observations, where $\lambda$ is the tail-dependence coefficient of the relevant corner, so the effective sample size of the tail estimator grows only like $\sqrt n$; an error decaying at the usual $k^{-1/2}$ rate---for instance the binomial standard error of $\hat p_T=k/n$---is therefore only $n^{-1/4}$ in the sample size.
+A more slowly vanishing $q_n$ would enlarge $k$ and accelerate convergence in $n$, at the cost of a larger bias in the tail approximation; we leave the corresponding consistency analysis to future work.
+We measure the densities with this divergence rather than an unweighted distance because it weights the discrepancy by the true density, and hence by the corner that the tail estimator is built to resolve. This is not a cosmetic choice: under the uniformly weighted $L^1$ distance the globally smoother bulk estimator is in fact preferred for the densities (the tail estimator wins only about $18\%$ of the cells), and the Hellinger distance, which down-weights the corner less aggressively, is intermediate---favouring the tail estimator only at $\tau=0.8$. The tail estimator's advantage is thus concentrated where the density is largest, exactly where the divergence places its weight.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\textwidth]{figures/sim_study.png}
+  \caption{Median error of the bulk ($\hat c_B$) and tail ($\hat c_T$) estimators against the sample size $n\in\{200,500,1000,2000,5000\}$, over $30$ replications, at Kendall's $\tau\in\{0.4,0.8\}$: generalized Kullback--Leibler divergence of the copula density $c$ and the tail-conditional density $h$, and relative error of the tail mass $p_n$ (columns). Both axes are logarithmic and lower is better. Gumbel is evaluated at the upper-right corner, Clayton and Student at the lower-left.}
+  \label{fig:sim}
+\end{figure}
+
+\section{Piece-Together Density Estimator}
+
+In this section, we propose a simple piece-together estimator that combines the bulk estimator of \cref{eq:bulk_estimator} with the tail estimator of \cref{eq:tail_estimator}.
 Define the raw piece-together density as
 \begin{align*}
-  \tilde c(u,v)
+  \tilde c(u_1,u_2)
   =
-  \hat c_B(u,v)\mathbf 1\{(u,v)\notin Q_n\}
+  \hat c_B(u_1,u_2)\mathbf 1\{(u_1,u_2)\notin Q_n\}
   +
-  \hat c_T(u,v)\mathbf 1\{(u,v)\in Q_n\}.
+  \hat c_T(u_1,u_2)\mathbf 1\{(u_1,u_2)\in Q_n\}.
 \end{align*}
 Since $\tilde c$ need not have exactly uniform margins, project it back onto
 the set of copula densities by multiplicative marginal scaling:
@@ -151,32 +217,8 @@ has approximately uniform margins on the grid. This amounts to solving
 by iterative proportional fitting \citep{deming1940least}.
 The final estimator is the bilinear interpolant of the scaled grid values
 
-\section{Numerical illustration}
-
-We illustrate the tail estimator on simulated data, comparing it to the bulk estimator evaluated in the same corner.
-Each family is studied at the corner where its tail dependence concentrates: the lower-left corner $[0,q_n]^2$ for Clayton and for the radially symmetric Student copula, and the upper-right corner $[1-q_n,1]^2$ for Gumbel; the remaining corners follow by rotation.
-Write $L_n$ for the relevant corner block with $q_n=n^{-1/2}$.
-The tail estimator $\hat c_T$ of the previous section rescales the observations falling in $L_n$ by $1/q_n$; we also record the tail-conditional density $h$ on $[0,1]^2$ of these rescaled observations (normalised so that $\int h=1$), to which $\hat c_T$ relates by $\hat c_T=(p_n/q_n^2)\,h$ with $p_n$ the tail mass.
-We draw $n\in\{200,500,1000,2000,5000\}$ observations from the Clayton, Gumbel, and Student ($\nu=4$) copulas at Kendall's $\tau\in\{0.4,0.8\}$, with $30$ replications each; both $\hat c_B$ and $\hat c_T$ use the probit-transform local-likelihood estimator of \citet{geenens2017probit} with the constant, maximal-correlation bandwidth.
-On a $100\times100$ grid over the corner we report, for the copula density $c$ and the tail-conditional density $h$, the generalized Kullback--Leibler divergence (I-divergence) $\int[f\log(f/\hat f)-f+\hat f]$ between the truth $f$ and the estimate $\hat f$---the natural discrepancy when $c$ and $h$ are read as density estimators, non-negative for any non-negative $\hat f$ and reducing to the usual Kullback--Leibler divergence when both integrate to one---together with the relative error of the tail mass $p_n=\Pr\{(U,V)\in L_n\}$, estimated by $\hat p_B=\int_{L_n}\hat c_B$ for the bulk and by $\hat p_T=k/n$ for the tail, where $k=\#\{i:(U_i,V_i)\in L_n\}$.
-\Cref{fig:sim} shows the median of each metric over the $30$ replications as a function of the sample size $n$, with the estimators distinguished by colour and the dependence levels by line type.
-
-The tail estimator clearly outperforms the bulk: it estimates the tail mass more accurately in $97\%$ of the cells and the densities in $88\%$ (about $80$--$87\%$ at $\tau=0.4$, rising to $93\%$ at $\tau=0.8$), typically reducing the divergence several-fold, and this ordering is stable across $n$ with the largest gains at strong dependence.
-The bulk estimator, which borrows strength from the whole sample with a global bandwidth, is competitive only in the data-poor regime---the smallest and weakly dependent samples.
-
-Improvement with the sample size $n$ is, however, slow, especially for the tail-conditional density $h$.
-This is expected: because $q_n=n^{-1/2}$, the corner block holds only $k\approx\lambda\,n\,q_n=\lambda\sqrt{n}$ observations, where $\lambda$ is the tail-dependence coefficient of the relevant corner, so the effective sample size of the tail estimator grows only like $\sqrt n$; an error decaying at the usual $k^{-1/2}$ rate---for instance the binomial standard error of $\hat p_T=k/n$---is therefore only $n^{-1/4}$ in the sample size.
-A more slowly vanishing $q_n$ would enlarge $k$ and accelerate convergence in $n$, at the cost of a larger bias in the tail approximation; we leave the corresponding consistency analysis to future work.
-We measure the densities with this divergence rather than an unweighted distance because it weights the discrepancy by the true density, and hence by the corner that the tail estimator is built to resolve. This is not a cosmetic choice: under the uniformly weighted $L^1$ distance the globally smoother bulk estimator is in fact preferred for the densities (the tail estimator wins only about $18\%$ of the cells), and the Hellinger distance, which down-weights the corner less aggressively, is intermediate---favouring the tail estimator only at $\tau=0.8$. The tail estimator's advantage is thus concentrated where the density is largest, exactly where the divergence places its weight.
-
-\begin{figure}[ht]
-  \centering
-  \includegraphics[width=\textwidth]{figures/sim_study.png}
-  \caption{Median error of the bulk ($\hat c_B$) and tail ($\hat c_T$) estimators against the sample size $n\in\{200,500,1000,2000,5000\}$, over $30$ replications, at Kendall's $\tau\in\{0.4,0.8\}$: generalized Kullback--Leibler divergence of the copula density $c$ and the tail-conditional density $h$, and relative error of the tail mass $p_n$ (columns). Both axes are logarithmic and lower is better. Gumbel is evaluated at the upper-right corner, Clayton and Student at the lower-left.}
-  \label{fig:sim}
-\end{figure}
-
-\section{Asymptotic properties of the piece-together estimator}
+\section{Asymptotic
+Properties of the Piece-Together Estimator}
 TODO:
 \begin{itemize}
   \item Prove consistency and asymptotic normality of $\hat c_T(u,v)$.
