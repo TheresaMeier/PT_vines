@@ -1,0 +1,334 @@
+% !TEX root
+\documentclass[12pt, headinclude=true]{scrartcl}
+
+\usepackage{lmodern}
+\usepackage{babel} 
+
+\usepackage{graphicx}
+\usepackage{enumerate}
+
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{dsfont}
+\usepackage{bm}
+\usepackage{algorithm}
+
+\usepackage{subfig}
+\usepackage{wrapfig}
+
+\usepackage{todonotes}
+
+\usepackage{hyperref}
+\hypersetup{
+	colorlinks   = true,
+ urlcolor     = blue,
+ linkcolor    = blue,
+ citecolor   = blue
+}
+\usepackage[noabbrev, capitalize,nameinlink]{cleveref}
+\usepackage[round, comma]{natbib}
+
+% \input{latex_templates/layout.tex}
+\input{latex_templates/microtype.tex}
+\input{latex_templates/theorems.tex} 
+
+\input{latex_shortcuts/math.tex}
+\input{latex_shortcuts/stats.tex}
+\input{latex_shortcuts/tex.tex} 
+ 
+
+%------------------------------------------------------------------------------%
+
+\title{Nonparametric Pieced-Together Copula Density Estimation}
+\author{Thibault Vatter\\ University of Applied Sciences Western Switzerland}
+
+
+\begin{document}
+
+\maketitle
+
+\section{Setup}
+
+Let $U=(U_1,U_2)^\top \sim C$ be an absolutely continuous random vector with standard uniform margins. In other words, $C$ is a copula, and we denote by $c$ its density.
+Assume that one is interested in nonparametrically estimating $c$ based on a random sample $U^{(i)}=(U_{1}^{(i)},U_{2}^{(i)})^\top$, $i=1,\ldots,n$.
+Several such estimators have been proposed in the literature, and we refer to \citet{nagler2017nonparametric} for a review and benchmark comparison.
+In this paper, we focus on the probit-transformed local-likelihood estimator of \citet{geenens2017probit} for three reasons: it is the best-performing estimator in the benchmark study, it is easy to implement and use, and its asymptotic properties are well understood.
+
+Define the probit-transformed vector $X=(X_1,X_2)^\top=(\Phi^{-1}(U_1),\Phi^{-1}(U_2))$, estimate its density using a Gaussian kernel, and back-transform the resulting density estimator to $[0,1]^2$, that is
+\begin{align} \label{eq:bulk_estimator}
+  \hat c_{B}(u_1,u_2)
+  =
+  \frac{
+    \hat f_B(\Phi^{-1}(u_1),\Phi^{-1}(u_2))
+  }{
+    \phi(\Phi^{-1}(u_1))\phi(\Phi^{-1}(u_2))
+  },
+\end{align}
+where the subscript $B$ stands for \emph{bulk} and
+\begin{align*}
+  \hat f_B(x_1,x_2)
+  =
+  \frac{1}{n b_n^2}
+  \sum_{i=1}^n
+  K_B\left(
+    \frac{x_1-X_{1}^{(i)}}{b_n},
+    \frac{x_2-X_{2}^{(i)}}{b_n}
+  \right),
+\end{align*}
+with $K_B$ the standard bivariate Gaussian kernel and $b_n>0$ a bandwidth parameter.
+While, this nonparametric estimator outperforms competitors in the benchmarking study of \citet{nagler2017nonparametric}, it is not designed to capture the tail behavior of the copula density.
+
+\section{Kernel Density Estimation of the Tail Copula Density}
+For a threshold $q\to0$, define the (lower) tail as a vanishing region $Q_q=[0, q]^2$ with probability mass $p_q=C(q,q)$, and
+the (lower) tail copula \citep{schmidt2006non} as the homogeneous limit function
+\begin{align*}%\label{eq:tail_copula}
+  \Lambda(s_1,s_2)
+  =
+  \lim_{q\rightarrow0}
+  q^{-1}C(qs_1,qs_2),
+  \qquad (s_1,s_2)\in[0,\infty)^2,
+\end{align*}
+whenever the limit exists and the tail dependence coefficient $\Lambda(1,1)$ corresponds to the rescaled probability of joint extreme events.
+Assume that $\Lambda(1,1)>0$ and that the restriction of $\Lambda$ to $(0,1)^2$ is absolutely
+continuous with tail density
+\begin{align*}
+  \lambda(s_1,s_2)
+  =
+  \frac{\partial^2}{\partial s_1\partial s_2}\Lambda(s_1,s_2),
+  \qquad (s_1,s_2)\in(0,1)^2.
+\end{align*}
+Note that it is different from the conditional density of the rescaled observations in the tail block $Q_q$, which is defined as
+\begin{align*}
+  h_q(s_1,s_2)
+  =
+   \frac{\partial^2}{\partial s_1\partial s_2} \Pr\{U_1/q \leq s_1, U_2/q \leq s_2 \mid U \in Q_q\} = \frac{q^2 c(qs_1,qs_2)}{p_q},
+  \qquad (s_1,s_2)\in(0,1)^2,
+\end{align*}
+whose limit can be written as
+\begin{align*}
+  h(s_1,s_2)
+  =
+  \lim_{q\to0}h_q(s_1,s_2)
+  =
+  \frac{\lambda(s_1,s_2)}{\Lambda(1,1)},
+  \qquad (s_1,s_2)\in(0,1)^2.
+\end{align*}
+For $(u_1,u_2)\in Q_q$, we use the approximations $h_q \approx h$ and $p_q / q \approx \Lambda(1,1)$ so that
+\begin{align*}
+  c(u_1,u_2) = \frac{p_q}{q^2} h_q(u_1/q,u_2/q) \approx \frac{1}{q}\lambda(u_1/q,u_2/q).
+\end{align*}
+
+To use this approximation in practice, make the threshold vanish with the number of observations, $q_n \to 0$, and write $Q_n=[0, q_n]^2$ for the tail region.
+Then, for observations falling in $Q_n$, define the rescaled variables $S=(S_1, S_2)^{\top}=(U_1/q_n,U_2/q_n)$ as well as their probit transforms $(Z_1,Z_2)=(\Phi^{-1}(S_1),\Phi^{-1}(S_2))$, estimate the conditional density of the rescaled observations using a Gaussian kernel as above, and back-transform the resulting density estimator to $[0,1]^2$, that is
+\begin{align} \label{eq:tail_estimator}
+  \hat c_T(u_1,u_2)
+  =
+  \frac{\hat p_{q_n}}{q_n^2}\hat h_{q_n}\left(u_1/q_n,u_2/q_n\right),
+\end{align}
+where the $T$ subscript stands for \emph{tail}, $\hat p_{q_n} = k_n/n$ with $k_n$ the number of observations in $Q_n$ is an estimate of the tail probability $p_{q_n} = C(q_n,q_n)$, and the conditional density of the rescaled tail observations is estimated as
+\begin{align*}
+  \hat h_{q_n}(s_1,s_2)
+  =
+  \frac{
+    \hat f_T(\Phi^{-1}(s_1),\Phi^{-1}(s_2))
+  }{
+    \phi(\Phi^{-1}(s_1))\phi(\Phi^{-1}(s_2))
+  },
+\end{align*}
+and
+\begin{align*}
+  \hat f_T(z_1, z_2)
+  =
+  \frac{1}{k_n h_n^2} \sum_{i:(U_{1}^{(i)},U_{2}^{(i)})\in Q_n}
+  K_T\left(
+    \frac{z_1-Z_{1}^{(i)}}{h_n},
+    \frac{z_2-Z_{2}^{(i)}}{h_n}
+  \right),
+\end{align*}
+$K_T$ a standard bivariate Gaussian kernel and $h_n>0$ a bandwidth parameter.
+
+\subsection{Numerical illustration}
+
+We illustrate the tail estimator of \cref{eq:tail_estimator} on simulated data, comparing it to the bulk estimator of \cref{eq:bulk_estimator} evaluated in the same corner.
+We let $q_n=n^{-1/2}$, so the number of tail observations $k_n$ is of order $\sqrt n$.
+
+We draw $n\in\{200,500,1000,2000,5000\}$ observations from the Clayton, Gumbel, and Student ($\nu=4$) copulas at Kendall's $\tau\in\{0.4,0.8\}$, with $30$ replications each.
+Each family is studied at the corner where its tail dependence concentrates: the lower-left corner for Clayton and for the radially symmetric Student copula, and the upper-right corner for Gumbel; the remaining corners follow by rotation.
+
+On a $100\times100$ grid over the corner we report, for the copula density $c$ and the tail-conditional density $h$, the generalized Kullback--Leibler divergence (I-divergence) $\int[f\log(f/\hat f)-f+\hat f]$ between the truth $f$ and the estimate $\hat f$---the natural discrepancy when $c$ and $h$ are read as density estimators, non-negative for any non-negative $\hat f$ and reducing to the usual Kullback--Leibler divergence when both integrate to one---together with the relative error of the tail mass estimated by $\hat p_B=\int_{Q_n}\hat c_B$ for the bulk and by $\hat p_T=k_n/n$ for the tail.
+\Cref{fig:sim} shows the median of each metric over the $30$ replications as a function of the sample size $n$, with the estimators distinguished by color and the dependence levels by line type.
+
+The tail estimator clearly outperforms the bulk: it estimates the tail mass more accurately in $97\%$ of the cells and the densities in $88\%$ (about $80$--$87\%$ at $\tau=0.4$, rising to $93\%$ at $\tau=0.8$), typically reducing the divergence several-fold, and this ordering is stable across $n$ with the largest gains at strong dependence.
+The bulk estimator, which borrows strength from the whole sample with a global bandwidth, is competitive only in the data-poor regime---the smallest and weakly dependent samples.
+
+Improvement with the sample size $n$ is, however, slow, especially for the tail-conditional density $h$.
+This is expected: because $q_n=n^{-1/2}$, the corner block holds only $k\approx\lambda\,n\,q_n=\lambda\sqrt{n}$ observations, where $\lambda$ is the tail-dependence coefficient of the relevant corner, so the effective sample size of the tail estimator grows only like $\sqrt n$; an error decaying at the usual $k^{-1/2}$ rate---for instance the binomial standard error of $\hat p_T=k/n$---is therefore only $n^{-1/4}$ in the sample size.
+A more slowly vanishing $q_n$ would enlarge $k$ and accelerate convergence in $n$, at the cost of a larger bias in the tail approximation; we leave the corresponding consistency analysis to future work.
+
+% We measure the densities with this divergence rather than an unweighted distance because it weights the discrepancy by the true density, and hence by the corner that the tail estimator is built to resolve. This is not a cosmetic choice: under the uniformly weighted $L^1$ distance the globally smoother bulk estimator is in fact preferred for the densities (the tail estimator wins only about $18\%$ of the cells), and the Hellinger distance, which down-weights the corner less aggressively, is intermediate---favouring the tail estimator only at $\tau=0.8$. The tail estimator's advantage is thus concentrated where the density is largest, exactly where the divergence places its weight.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\textwidth]{figures/sim_study.png}
+  \caption{Median error of the bulk ($\hat c_B$) and tail ($\hat c_T$) estimators against the sample size $n\in\{200,500,1000,2000,5000\}$, over $30$ replications, at Kendall's $\tau\in\{0.4,0.8\}$: generalized Kullback--Leibler divergence of the copula density $c$ and the tail-conditional density $h$, and relative error of the tail mass $p_n$ (columns). Both axes are logarithmic and lower is better. Gumbel is evaluated at the upper-right corner, Clayton and Student at the lower-left.}
+  \label{fig:sim}
+\end{figure}
+
+\section{Piece-Together Density Estimator}
+
+In this section, we propose a simple piece-together estimator that combines the bulk estimator of \cref{eq:bulk_estimator} with the tail estimator of \cref{eq:tail_estimator}.
+Define the raw piece-together density as
+\begin{align*}
+  \tilde c(u_1,u_2)
+  =
+  \hat c_B(u_1,u_2)\mathbf 1\{(u_1,u_2)\notin Q_n\}
+  +
+  \hat c_T(u_1,u_2)\mathbf 1\{(u_1,u_2)\in Q_n\}.
+\end{align*}
+Since $\tilde c$ need not have exactly uniform margins, project it back onto
+the set of copula densities by multiplicative marginal scaling:
+\begin{align*}
+  \bar c(u,v)
+  =
+  a_n(u)b_n(v)\tilde c(u,v),
+\end{align*}
+where $a_n,b_n>0$ solve
+\begin{align*}
+  \int_0^1 \bar c(u,v)\,dv = 1
+  \forall u\in[0,1],\qquad
+  \int_0^1 \bar c(u,v)\,du = 1, \forall  v\in[0,1].
+\end{align*}
+Assuming that the multiplicative scaling problem has a positive solution, the resulting estimator $\bar c$ is a valid copula density by construction.
+
+While $\bar c$ is the natural estimator to consider, it is not computationally tractable.
+In practice, we compute a discretized version of this projection and use a bilinear interpolant of the resulting grid values as the final estimator.
+Let
+$(u_i, v_j)=(i/(m+1), j/(m+1))$ and $\tilde c_{ij}=\tilde c(u_i,v_j)$ for $i,j=1,\ldots,m$ be a regular grid and corresponding raw piece-together density values.
+To define the final estimator bilinear interpolant $\hat c$, we then seek positive scaling factors $a_i,b_j$ such that
+\begin{align*}
+  \hat c_{ij}=a_i b_j\tilde c_{ij}
+\end{align*}
+has approximately uniform margins on the grid. This amounts to solving
+\begin{align*}
+  \sum_{j=1}^m \frac{1}{m+1} \hat c_{ij}=1,
+  \qquad
+  \sum_{i=1}^m \frac{1}{m+1} \hat c_{ij}=1,
+\end{align*}
+by iterative proportional fitting \citep{deming1940least}.
+The final estimator is the bilinear interpolant of the scaled grid values
+
+\section{Asymptotic
+Properties of the Piece-Together Estimator}
+TODO:
+\begin{itemize}
+  \item Prove consistency and asymptotic normality of $\hat c_T(u,v)$.
+    \begin{itemize}
+      \item Use the results of \citet{geenens2017probit} for the bulk estimator $\hat c_B$.
+      \item Adapt to the fact that the tail estimator is based on a random number of observations.
+    \end{itemize}
+  \item Prove consistency and asymptotic normality of the raw piece-together estimator $\tilde c$.
+  \item Prove consistency and asymptotic normality of the final piece-together estimator $\hat c$.
+\end{itemize}
+
+% \section{Reminders}
+
+% Let $U=(U_1,\ldots,U_d)$ have copula $C$ and, when it exists, copula density
+% \begin{align*}
+% c(u)
+% =
+% \frac{\partial^d}{\partial u_1\cdots\partial u_d}C(u),
+% \qquad u\in(0,1)^d.
+% \end{align*}
+
+% The lower tail copula is
+% \begin{align*}
+% \Lambda_L(x)
+% =
+% \lim_{q\downarrow 0}
+% q^{-1} C(qx_1,\ldots,qx_d),
+% \qquad x\in[0,\infty)^d.
+% \end{align*}
+
+% If $\Lambda_L$ is absolutely continuous, its lower tail copula density is
+% \begin{align*}
+% \lambda_L(x)
+% =
+% \frac{\partial^d}{\partial x_1\cdots\partial x_d}\Lambda_L(x),
+% \qquad x\in(0,\infty)^d.
+% \end{align*}
+
+% Equivalently, in density form,
+% \begin{align*}
+%   q^{d-1} c(qx_1,\ldots,qx_d)
+%   \to
+%   \lambda_L(x),
+% \end{align*}
+% or
+% \begin{align*}
+%   c(qx_1,\ldots,qx_d)
+%   \sim
+%   q^{1-d}\lambda_L(x).
+% \end{align*}
+
+% For the upper tail, define the survival copula tail probability
+% \begin{align*}
+%   \bar C(u_1,\ldots,u_d)
+%   =
+%   \Pr(U_1>u_1,\ldots,U_d>u_d).
+% \end{align*}
+
+% Equivalently, in terms of the copula $C$,
+% \begin{align*}
+% \bar C(u)
+% =
+% \sum_{A\subseteq\{1,\ldots,d\}}
+% (-1)^{|A|}
+% C(v_A(u)),
+% \end{align*}
+% where
+% \begin{align*}
+% (v_A(u))_j
+% =
+% \begin{cases}
+%   u_j, & j\in A,\\
+%   1, & j\notin A.
+% \end{cases}
+% \end{align*}
+
+% The upper tail copula is
+% \begin{align*}
+% \Lambda_U(x)
+% =
+% \lim_{q\downarrow 0}
+% q^{-1}\bar C(1-qx_1,\ldots,1-qx_d),
+% \qquad x\in[0,\infty)^d.
+% \end{align*}
+
+% If $\Lambda_U$ is absolutely continuous, its upper tail copula density is
+% \begin{align*}
+% \lambda_U(x)
+% =
+% \frac{\partial^d}{\partial x_1\cdots\partial x_d}\Lambda_U(x),
+% \qquad x\in(0,\infty)^d.
+% \end{align*}
+
+% Equivalently, in density form,
+% \begin{align*}
+% q^{d-1} c(1-qx_1,\ldots,1-qx_d)
+% \to
+% \lambda_U(x),
+% \end{align*}
+% or
+% \begin{align*}
+% c(1-qx_1,\ldots,1-qx_d)
+% \sim
+% q^{1-d}\lambda_U(x).
+% \end{align*}
+
+% Thus, the tail copulas $\Lambda_L$ and $\Lambda_U$ are cumulative limit objects, while $\lambda_L$ and $\lambda_U$ are the corresponding local density limits obtained from the copula density $c$ near the lower and upper corners.
+
+\bibliographystyle{apalike}
+\bibliography{mybib}
+
+\end{document}

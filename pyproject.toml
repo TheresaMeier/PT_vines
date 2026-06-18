@@ -1,0 +1,77 @@
+[build-system]
+requires = ["hatchling>=1.18.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "npptcop"
+version = "0.1.0"
+description = "Nonparametric Pieced-Together Copulas"
+readme = "README.md"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+  "numpy>=1.24",
+  "pyvinecopulib>=0.7.6",
+  "scipy>=1.11",
+  "torch>=2.2",
+]
+
+[project.optional-dependencies]
+interactive = [
+  # For notebooks
+  "jupyter>=1.0.0",
+  "notebook>=7.0.0",
+  "ipykernel>=6.25.0",
+
+  # Visualization
+  "matplotlib>=3.7.0",
+  "plotnine",
+
+  # Tables
+  "pandas>=2.0.0",
+  "great-tables>=0.18.0",
+  "tabulate>=0.9.0",
+]
+
+[dependency-groups]
+dev = [
+  # Linting, formatting, and type checking
+  "ruff>=0.9",
+  "ty>=0.0.14",
+  "pre-commit>=3.7.0",
+
+  # Unit testing
+  "pytest>=7.0.0",
+  "pytest-cov>=4.0.0",
+  "pytest-xdist>=3.0.0",
+
+  # Profiling
+  "line_profiler>=3.0.0",
+  "snakeviz>=2.0.0",
+]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/npptcop"]
+
+[tool.uv]
+default-groups = ["dev"]
+
+[tool.ruff]
+line-length = 80
+target-version = "py312"
+indent-width = 2
+src = ["src", "tests"]
+extend-exclude = ["old"]
+
+[tool.ruff.lint]
+extend-select = ["ANN"]
+
+# Type checking with ty
+[tool.ty.environment]
+python = ".venv"
+python-version = "3.12"
+
+[tool.ty.src]
+include = ["src", "tests"]

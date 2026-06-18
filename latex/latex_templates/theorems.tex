@@ -1,0 +1,111 @@
+\usepackage{shadethm}
+\usepackage{etoolbox}
+
+% theorem environments
+
+\newtheoremstyle{new}
+  {12pt}      % Space above
+  {12pt}      % Space below
+  {\itshape}  % Body font
+  {}          % Indent amount (empty = no indent, \parindent = para indent)
+  {\bfseries\color{black}} % head font
+  {.}         % Punctuation after  head
+  { }         % Space after  head: " " = normal inter-word space; \newline = line break
+  {}          % head spec (can be left empty, meaning 'normal')
+\theoremstyle{new}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{assumption}[theorem]{Assumption}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{claim}[theorem]{Claim}
+
+\AfterEndEnvironment{theorem}{\noindent\ignorespaces}
+\AfterEndEnvironment{corollary}{\noindent\ignorespaces}
+\AfterEndEnvironment{proposition}{\noindent\ignorespaces}
+\AfterEndEnvironment{lemma}{\noindent\ignorespaces}
+\AfterEndEnvironment{definition}{\noindent\ignorespaces}
+\AfterEndEnvironment{assumption}{\noindent\ignorespaces}
+\AfterEndEnvironment{example}{\noindent\ignorespaces}
+\AfterEndEnvironment{remark}{\noindent\ignorespaces}
+\AfterEndEnvironment{claim}{\noindent\ignorespaces}
+
+\Crefname{theorem}{Theorem}{Theorems}
+\Crefname{corollary}{Corollary}{Corollaries}
+\Crefname{proposition}{Proposition}{Propositions}
+\Crefname{lemma}{Lemma}{Lemmas}
+\Crefname{definition}{Definition}{Definitions}
+\Crefname{example}{Example}{Examples}
+\Crefname{remark}{Remark}{Remarks}
+\Crefname{claim}{Claim}{Claims}
+
+\usepackage[breakable, theorems, skins]{tcolorbox}
+\tcbset{enhanced}
+
+% same environments with shaded background
+\definecolor{shadethmcolor}{cmyk}{0,0,0,0.075}    
+% \definecolor{shadethmcolor}{cmyk}{0.5, 0, 0.425, 0.075}    
+\definecolor{shaderulecolor}{rgb}{1,1,1}   % color of frame 
+
+\DeclareRobustCommand{\mybox}[1]{%
+\begin{tcolorbox}[   %% Adjust the following parameters at will.
+        breakable,
+        left=0pt,
+        right=0pt,
+        top=0pt,
+        bottom=0pt,
+        colback=shadethmcolor,
+        colframe=shaderulecolor,
+        width=\dimexpr\textwidth\relax, 
+        enlarge left by=0mm,
+        boxsep=5pt,
+        arc=0pt,outer arc=0pt,
+        ]
+        #1
+\end{tcolorbox}
+}
+
+\setlength{\shadeboxrule}{1.2pt}   % width of frame
+\setlength{\shadeboxsep}{7pt}
+\setlength\shadedtextwidth{\dimexpr\textwidth-2\shadeboxsep\relax}
+\newtheoremstyle{shad}
+  {12pt}      % Space above
+  {12pt}      % Space below
+  {\itshape }  % Body font
+  {}          % Indent amount (empty = no indent, \parindent = para indent)
+  {\bfseries\color{black}} % head font
+  {.}         % Punctuation after head
+  { }         % Space after head: " " = normal inter-word space; \newline = line break
+  {}          % head spec (can be left empty, meaning 'normal')
+\theoremstyle{shad} 
+
+\newshadetheorem{thmbox}[theorem]{Theorem}
+\newshadetheorem{corbox}[theorem]{Corollary}
+\newshadetheorem{propbox}[theorem]{Proposition}
+\newshadetheorem{lembox}[theorem]{Lemma}
+\newshadetheorem{exbox}[theorem]{Example}
+\newshadetheorem{defbox}[theorem]{Definition}
+\newshadetheorem{rembox}[theorem]{Remark}
+
+\newtheoremstyle{shad*}
+  {12pt}      % Space above
+  {12pt}      % Space below
+  {\itshape }  % Body font
+  {}          % Indent amount (empty = no indent, \parindent = para indent)
+  {\bfseries\color{black}} % head font
+  {.}         % Punctuation after head
+  { }         % Space after head: " " = normal inter-word space; \newline = line break
+  {}          % head spec (can be left empty, meaning 'normal')
+\theoremstyle{shad*} 
+\newshadetheorem{anobox}{}
+
+\Crefname{theorem}{Theorem}{Theorems}
+\Crefname{corbox}{Korollar}{Corollaries}
+\Crefname{propbox}{Proposition}{Propositions}
+\Crefname{lembox}{Lemma}{Lemmas}
+\Crefname{exbox}{Beispiel}{Examples}
+\Crefname{defbox}{Definition}{Definitions}
+\Crefname{rembox}{Anmerkung}{Remarks}
