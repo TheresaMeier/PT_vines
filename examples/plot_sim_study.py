@@ -30,7 +30,7 @@ from plotnine import (
   theme_bw,
 )
 
-N_BREAKS: tuple[int, ...] = (200, 500, 1000, 2000, 5000)
+N_BREAKS: tuple[int, ...] = (200, 500, 1000, 2000, 5000, 10000, 20000)
 FAMILY_ORDER: tuple[str, ...] = ("Clayton", "Gumbel", "Student")
 METRIC_ORDER: tuple[str, ...] = ("KL(c)", "KL(h)", "RE(p)")
 # Display model -> estimator label (line colour); the parametric tail families
@@ -104,6 +104,7 @@ def make_plot(long: pd.DataFrame) -> ggplot:
     + labs(
       x="sample size n (log scale)",
       y="median error (log scale; lower is better)",
+      title="k = n**(1/2) and simple bandwidth (-2/6)",
       color="estimator",
       linetype="Kendall's tau",
     )
@@ -118,9 +119,15 @@ def make_plot(long: pd.DataFrame) -> ggplot:
 def main() -> None:
   """Parse args, build the plot, and save it."""
   parser = argparse.ArgumentParser(description=__doc__)
-  parser.add_argument("--input", type=Path, default=Path("results.csv"))
   parser.add_argument(
-    "--output", type=Path, default=Path("latex/figures/sim_study.png")
+    "--input",
+    type=Path,
+    default=Path("results/sim_study_biv_tail_bandwidth_2_6.csv"),
+  )
+  parser.add_argument(
+    "--output",
+    type=Path,
+    default=Path("latex/figures/sim_study_sample_size_bandwidth_2_6.png"),
   )
   parser.add_argument("--dpi", type=int, default=130)
   args = parser.parse_args()

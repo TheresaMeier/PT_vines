@@ -76,7 +76,8 @@ COLUMNS: tuple[str, ...] = (
   "family",
   "tau",
   "n",
-  "k",
+  "k_obs",
+  "k_optim",
   "q",
   "model",
   "target",
@@ -91,6 +92,54 @@ COLUMNS: tuple[str, ...] = (
 
 
 # --- multi-family helpers (not in the package) ------------------------------
+
+def empirical_lower_tail_dependence(psobs, k=None):
+  """
+  Empirical estimator of lower tail dependence coefficient.
+      Parameters
+  ----------
+  psobs : pseudo-observations as tensors
+  k : int, optional
+      Number of upper order statistics.
+      Default: round(sqrt(n))
+
+  Returns
+  -------
+  lambda_hat : float
+  """
+
+  n = psobs.shape[0]
+
+  if k is None:
+    k = int(torch.sqrt(torch.tensor(n)))
+
+  threshold = k / n
+
+  joint_exceedances = torch.sum(
+    (psobs[:, 0] < threshold) & (psobs[:, 1] < threshold)
+  )
+
+  return joint_exceedances / k
+
+
+def select_k(u_data, rotation, k_grid, smooth_window=30, std_tol=0.01):
+  u_sel = _reflect(u_data, rotation)
+  vals = np.array([empirical_lower_tail_dependence(u_sel, k) for k in k_grid])
+
+  # first stable window
+  for i in range(len(vals) - smooth_window + 1):
+    if np.std(vals[i : i + smooth_window]) < std_tol:
+      return int(k_grid[i]), vals
+
+  # fallback: most stable window
+  scores = np.array(
+    [
+      np.std(vals[i : i + smooth_window])
+      for i in range(len(vals) - smooth_window + 1)
+    ]
+  )
+  i_star = int(np.argmin(scores))
+  return int(k_grid[i_star]), vals
 
 
 def q_of_n(n: int) -> float:
@@ -165,7 +214,8 @@ class ComboResult:
 
   spec: ComboSpec
   status: str
-  k: int | None
+  k_obs: int | None
+  k_optim: int | None
   rows: list[dict[str, object]]
 
 
@@ -246,7 +296,8 @@ def _ordinary_targets(
 def _metric_rows(
   spec: ComboSpec,
   q: float,
-  k: int,
+  k_obs: int | None,
+  k_optim: int | None,
   ests: dict[str, dict[str, Tensor]],
   truths: dict[str, Tensor],
   cell_areas: dict[str, float],
@@ -259,7 +310,8 @@ def _metric_rows(
     "family": spec.family,
     "tau": spec.tau,
     "n": spec.n,
-    "k": k,
+    "k_obs": k_obs,
+    "k_optim": k_optim,
     "q": q,
   }
   rows: list[dict[str, object]] = []
@@ -290,13 +342,16 @@ def run_combo(spec: ComboSpec) -> ComboResult:
     u_data = torch.as_tensor(
       bicop.simulate(spec.n, seeds=[spec.seed]), dtype=torch.float64
     )
-    q = q_of_n(spec.n)
+    k_grid = np.arange(5, max(6, spec.n // 5) + 1)
+    k_optim, lam_vals = select_k(u_data, spec.rotation, k_grid)
+
+    q = u_data.shape[0] ** (-0.5)  # k_optim / spec.n
     # Skip before fitting: bandwidth selection (ACE) is undefined for a few
     # points, so a tiny tail must be skipped on count, not via a failed fit.
-    k = _corner_count(u_data, q, spec.rotation)
-    if k < spec.min_tail_count:
-      status = f"skipped (k={k} < {spec.min_tail_count})"
-      return ComboResult(spec, status, k, [])
+    k_obs = _corner_count(u_data, q, spec.rotation)
+    if k_obs < spec.min_tail_count:
+      status = f"skipped (k={k_obs} < {spec.min_tail_count})"
+      return ComboResult(spec, status, k_obs=k_obs, k_optim=k_optim, rows=[])
 
     grid, cell_area = unit_grid(spec.grid_size, spec.eps)
     u_tail_grid = grid * q
@@ -334,15 +389,17 @@ def run_combo(spec: ComboSpec) -> ComboResult:
       }
       p_hats[model] = par_est.fit_.p
 
-    rows = _metric_rows(spec, q, k, ests, truths, cell_areas, p_hats, p_true)
-    return ComboResult(spec, "ok", k, rows)
+    rows = _metric_rows(
+      spec, q, k_obs, k_optim, ests, truths, cell_areas, p_hats, p_true
+    )
+    return ComboResult(spec, "ok", k_obs=k_obs, k_optim=k_optim, rows=rows)
   except torch.linalg.LinAlgError:
     # Residual non-positive-definite bandwidth that --ridge cannot repair: a
     # small tail sample whose ACE maximal correlation is undefined (NaN), so the
     # selected bandwidth is non-finite. Such a cell is not estimable.
-    return ComboResult(spec, "skipped (singular bandwidth)", None, [])
+    return ComboResult(spec, "skipped (singular bandwidth)", None, None, [])
   except Exception as exc:
-    return ComboResult(spec, f"error: {exc!r}", None, [])
+    return ComboResult(spec, f"error: {exc!r}", None, None, [])
 
 
 # --- CLI / orchestration ----------------------------------------------------
@@ -358,7 +415,7 @@ def build_parser() -> argparse.ArgumentParser:
   )
   parser.add_argument("--taus", nargs="+", type=float, default=[0.4, 0.8])
   parser.add_argument(
-    "--ns", nargs="+", type=int, default=[200, 500, 1000, 2000, 5000]
+    "--ns", nargs="+", type=int, default=[500, 1000, 2000, 5000, 10000, 20000]
   )
   parser.add_argument("--seeds", nargs="+", type=int, default=list(range(30)))
   parser.add_argument("--nu", type=int, default=4)
@@ -367,7 +424,9 @@ def build_parser() -> argparse.ArgumentParser:
   parser.add_argument("--min-tail-count", type=int, default=5)
   parser.add_argument("--ridge", type=float, default=1e-6)
   parser.add_argument(
-    "--output", type=Path, default=Path("results/sim_study_biv_tail.csv")
+    "--output",
+    type=Path,
+    default=Path("results/sim_study_biv_tail_bandwidth_2_6.csv"),
   )
   parser.add_argument("--workers", type=int, default=None)
   parser.add_argument(
@@ -412,9 +471,9 @@ def run_study(specs: list[ComboSpec], workers: int) -> list[ComboResult]:
     for i, future in enumerate(as_completed(futures), start=1):
       result = future.result()
       spec = result.spec
-      k_str = "-" if result.k is None else str(result.k)
+      k_str = "-" if result.k_obs is None else str(result.k_obs)
       LOG.info(
-        "[%d/%d] %-8s | tau=%.2f | n=%5d | seed=%d -> k=%s, %s",
+        "[%d/%d] %-8s | tau=%.2f | n=%5d | seed=%d -> k_obs=%s, %s",
         i,
         total,
         spec.family,
@@ -470,3 +529,4 @@ def main() -> None:
 
 if __name__ == "__main__":
   main()
+
